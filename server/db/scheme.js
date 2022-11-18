@@ -102,11 +102,20 @@ const fieldsInfoOfCompany = sequelize.define('infoOfCompany', {
   name: {
     type: DataTypes.TEXT,
     allowNull: false,
-  },
-  value: {
-    type: DataTypes.TEXT,
+  }
+})
+
+const fieldsCompany = sequelize.define('fieldsCompany', {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
     allowNull: false,
   },
+  value: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  }
 })
 
 // Связи
@@ -125,8 +134,8 @@ company.belongsToMany(contactPerson, {through: "contactCompany"})
 historyPublic.belongsToMany(company, {through: "historyCompany"})
 company.belongsToMany(historyPublic, {through: "historyCompany"})
 
-company.belongsToMany(fieldsInfoOfCompany, {through: "fieldsCompany"})
-fieldsInfoOfCompany.belongsToMany(company, {through: "fieldsCompany"})
+company.belongsToMany(fieldsInfoOfCompany, {through: fieldsCompany})
+fieldsInfoOfCompany.belongsToMany(company, {through: fieldsCompany})
 
 module.exports = {
   dbBaseSetting,
@@ -139,4 +148,5 @@ module.exports = {
   contactPerson,
   status,
   event,
+  fieldsCompany,
 }

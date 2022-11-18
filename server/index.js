@@ -30,7 +30,7 @@ app.use(json2xls.middleware)
 
 app.use(express.static('static'))
 
-require('./routesDb/index') // Урлы запросов
+require('./routesDb/index')(app, upload) // Урлы запросов
 
 app.listen(baseSettings.port, () => {
     console.log(`Server start on ${baseSettings.baseUrl}:${baseSettings.port}/`)

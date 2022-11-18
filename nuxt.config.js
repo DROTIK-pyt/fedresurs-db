@@ -1,4 +1,5 @@
 import colors from 'vuetify/es5/util/colors'
+import ru from 'vuetify/lib/locale/ru'
 
 export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
@@ -6,7 +7,7 @@ export default {
     titleTemplate: '%s - DB',
     title: 'DB',
     htmlAttrs: {
-      lang: 'en'
+      lang: 'ru'
     },
     meta: [
       { charset: 'utf-8' },
@@ -64,7 +65,11 @@ export default {
           success: colors.green.accent3
         }
       }
-    }
+    },
+    lang: { 
+        locales: { ru },
+        current: 'ru',
+    },
   },
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
