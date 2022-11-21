@@ -91,9 +91,7 @@ module.exports = function(app, upload) {
     })
 
     app.get('/company', async (req, res) => {
-        const items = await company.findAll({
-            limit: 30,
-        })
+        const items = await company.findAll()
 
         let results = []
         let fieldsValues = await fieldsCompany.findAll()
@@ -119,5 +117,42 @@ module.exports = function(app, upload) {
         }
 
         res.json({ok: true, results})
+    })
+
+    app.post('/companyViaId', async (req, res) => {
+        const { idCompany } = req.body
+        const items = await company.findAll({
+            where: {
+                idCompany
+            }
+        })
+
+        const aCompany = items[0]
+        const contact = await aCompany.getContactPeople()
+
+        let results = []
+        let fieldsValues = await fieldsCompany.findAll()
+
+        for (let i = 0; i < items.length; i++) {
+            let fvs = {}
+            fieldsValues.forEach(fv => {
+                if(fv.companyIdCompany === items[i].idCompany) {
+                    fvs[`${fv.infoOfCompanyIdInfo}`] = fv.value
+                }
+            })
+
+            let fields = await items[i].getInfoOfCompanies()
+
+            let result = {}
+            fields.forEach(field => {
+                result[`${field.tag}`] = fvs[`${field.idInfo}`]
+            })
+
+            result[`idCompany`] = items[i].idCompany
+
+            results.push(result)
+        }
+
+        res.json({ok: true, results, contact: contact[0]})
     })
 }

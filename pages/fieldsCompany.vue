@@ -61,7 +61,7 @@
                 </p>
             </div>
             </v-col>
-            <v-col cols="12" sm="9" v-for="fieldsOfCompony of fieldsOfComponiesData" :key="fieldsOfCompony">
+            <v-col cols="12" sm="9" v-for="fieldsOfCompony of fieldsOfComponiesData" :key="fieldsOfCompony.tag">
                 <v-row>
                     <v-col
                     cols="12"
@@ -176,8 +176,6 @@ export default {
             // Получить поля компаний
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`)
             const fieldsOfComponies = await data.json()
-
-            console.log(fieldsOfComponies)
 
             // Вставить их в данные
             this.fieldsOfComponiesData = []

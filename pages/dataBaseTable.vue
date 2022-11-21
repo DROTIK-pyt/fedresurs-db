@@ -19,11 +19,11 @@
             :items="companies"
             :search="search"
             >
-            <template v-slot:item.actions="{ company }">
+            <template v-slot:item.actions="{ item }">
                 <v-icon
                     small
                     class="mr-2"
-                    @click="ShowCompany(company.idCompany)"
+                    @click="ShowCompany(item)"
                 >
                     mdi-eye
                 </v-icon>
@@ -35,13 +35,19 @@
         cols="12"
         sm="3"
         >
-            <filterVue></filterVue>
         </v-col>
+        <aCompanyVue
+            v-if="isOpenShowCompany"
+            :isOpen="isOpenShowCompany"
+            :company="aCompany"
+            :contact="aContact"
+            @closeView="closeShowCompany"
+        ></aCompanyVue>
     </v-row>
 </template>
 
 <script>
-import filterVue from '../components/filterCompanies.vue'
+import aCompanyVue from '../components/aCompany.vue'
 
 const serverSetting = require('../server/config/serverSetting.json')
 
@@ -53,6 +59,10 @@ export default {
             { text: 'Действия', value: 'actions', sortable: false },
         ],
         companies: [],
+
+        aCompany: "",
+        aContact: "",
+        isOpenShowCompany: false
     }),
     methods: {
         async getAllData() {
@@ -73,15 +83,35 @@ export default {
             data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/company`)
             const companies = await data.json()
 
-            console.log(companies.results)
-
             // Вставить данные компаний
             if(companies.ok) {
                 this.companies = companies.results
             }
-        }
+        },
+        async ShowCompany({ idCompany }) {
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/companyViaId`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8',
+                },
+                body: JSON.stringify({
+                    idCompany
+                })
+            })
+            const companies = await data.json()
+
+            const company = companies.results.shift()
+            const contact = companies.contact
+
+            this.aCompany = company
+            this.aContact = contact
+            this.isOpenShowCompany = true
+        },
+        closeShowCompany() {
+            this.isOpenShowCompany = false
+        },
     },
-    components: {filterVue},
+    components: {aCompanyVue},
     async beforeMount() {
         this.getAllData()
     },
