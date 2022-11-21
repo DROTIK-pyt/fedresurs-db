@@ -1,5 +1,6 @@
 const { company, fieldsInfoOfCompany, historyPublic, contactPerson, status, event, fieldsCompany, Op } = require('../db/scheme')
 const CyrillicToTranslit = require('cyrillic-to-translit-js')
+const parser = require('simple-excel-to-json')
 const cyrillicToTranslit = new CyrillicToTranslit()
 
 module.exports = function(app, upload) {
@@ -121,6 +122,7 @@ module.exports = function(app, upload) {
 
     app.post('/companyViaId', async (req, res) => {
         const { idCompany } = req.body
+        console.log(req.session)
         const items = await company.findAll({
             where: {
                 idCompany
@@ -154,5 +156,17 @@ module.exports = function(app, upload) {
         }
 
         res.json({ok: true, results, contact: contact[0]})
+    })
+
+    app.post('/getHeadFieldsExcel', upload.single('xlxsFile'), async (req, res) => {
+        const { file } = req
+        if (!req.session.key) req.session.key = req.sessionID
+
+        let fieldsValues = await fieldsInfoOfCompany.findAll()
+
+        const readFile = parser.parseXls2Json(req.originalSrc)
+        req.session.excelFile = readFile
+
+        res.json({ok: true, fieldsValues, heading: Object.keys(readFile[0][0])})
     })
 }
