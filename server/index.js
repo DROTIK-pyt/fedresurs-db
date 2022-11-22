@@ -5,10 +5,6 @@ const express = require("express")
 const cors = require('cors')
 const multer  = require('multer')
 const path = require('path')
-const session = require('express-session')
-const redisStorage = require('connect-redis')(session)
-const redis = require('redis')
-const client = redis.createClient()
 // const json2xls = require('json2xls')
 // const jwt = require('jsonwebtoken')
 // const signature = "FJWr"
@@ -33,15 +29,6 @@ const app = express()
 app.use(cors())
 app.use(express.json({ limit: '500kb', parameterLimit: 10000 })) // for parsing application/json
 app.use(express.urlencoded({ extended: true, limit: '500kb', parameterLimit: 10000 }))
-app.use(session({
-    store: new redisStorage({
-        host: "127.0.0.1",
-        port: 6379,
-        client: client,
-    }),
-    secret: 'FJWr',
-    saveUninitialized: true,
-    }))
 // app.use(json2xls.middleware)
 
 app.use(express.static('static'))

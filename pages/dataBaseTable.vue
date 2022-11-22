@@ -99,6 +99,7 @@ export default {
                 })
             })
             const companies = await data.json()
+            console.log(companies)
 
             const company = companies.results.shift()
             const contact = companies.contact

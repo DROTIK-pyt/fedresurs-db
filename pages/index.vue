@@ -1,50 +1,83 @@
 <template>
-    <v-row>
+    <v-row align="baseline">
         <v-col
         cols="12"
-        sm="12"
+        sm="10"
         >
-            <v-file-input
-                v-model="files"
-                color="deep-purple accent-4"
-                counter
-                label="Выберите файл Excel"
-                multiple
-                placeholder="Импорт"
-                prepend-icon="mdi-paperclip"
-                outlined
-                :show-size="1000"
-                :accept="accepts.join(', ')"
-            >
-                <template v-slot:selection="{ index, text }">
-                <v-chip
-                    v-if="index < 2"
-                    color="deep-purple accent-4"
-                    dark
-                    label
-                    small
+            <v-row align="baseline">
+                <v-col
+                cols="12"
+                sm="5"
                 >
-                    {{ text }}
-                </v-chip>
+                    <v-file-input
+                        v-model="files"
+                        color="deep-purple accent-4"
+                        counter
+                        label="Выберите файл Excel"
+                        multiple
+                        placeholder="Импорт"
+                        prepend-icon="mdi-paperclip"
+                        outlined
+                        :show-size="1000"
+                        :accept="accepts.join(', ')"
+                    >
+                        <template v-slot:selection="{ index, text }">
+                        <v-chip
+                            v-if="index < 2"
+                            color="deep-purple accent-4"
+                            dark
+                            label
+                            small
+                        >
+                            {{ text }}
+                        </v-chip>
 
-                <span
-                    v-else-if="index === 2"
-                    class="text-overline grey--text text--darken-3 mx-2"
+                        <span
+                            v-else-if="index === 2"
+                            class="text-overline grey--text text--darken-3 mx-2"
+                        >
+                            +{{ files.length - 2 }} File(s)
+                        </span>
+                        </template>
+                    </v-file-input>
+                </v-col>
+                <v-col
+                cols="12"
+                sm="4"
                 >
-                    +{{ files.length - 2 }} File(s)
-                </span>
-                </template>
-            </v-file-input>
+                    <v-btn
+                        depressed
+                        color="primary"
+                        @click="uploadToBase"
+                        :loading="loading2base"
+                    >
+                        Загрузить в базу
+                    </v-btn>
+                    <v-spacer></v-spacer>
+                </v-col>
+            </v-row>
+        </v-col>
+        <v-col
+        cols="12"
+        sm="2"
+        >
+        <v-btn
+            depressed
+            color="error"
+            @click="clearCache"
+        >
+            Сброс кеша
+        </v-btn>
         </v-col>
         <v-col
         cols="12"
         sm="3"
-        v-if="files.length > 0"
         >
         <div class="preloader" v-if="loadingData">
+            <h3 class="mb-3">Заголовки</h3>
             <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
         </div>
-        <div v-else>
+        <div v-else class="main-headings">
         <h3 class="mb-3">Заголовки</h3>
             <draggable
                 class="list-group"
@@ -75,35 +108,42 @@
         </v-col>
         <v-col
             cols="12"
+            sm="9"
+        >
+        <v-row>
+            <v-col
+            cols="12"
             sm="3"
             v-for="field in fieldsSystem"
             :key="field.tag"
-        >
-        <h3 class="mb-3">{{ field.name }}</h3>
-        <draggable
-            class="list-group"
-            tag="ul"
-            v-model="field.item"
-            v-bind="dragOptions"
-            @start="drag = true"
-            @end="drag = false"
-        >
-            <transition-group type="transition" :name="!drag ? 'flip-list' : null">
-            <li
-                class="list-group-item"
-                v-for="element in field.item"
-                :key="field.tag"
             >
-                <i
-                :class="
-                    element.fixed ? 'fa fa-anchor' : 'glyphicon glyphicon-pushpin'
-                "
-                aria-hidden="true"
-                ></i>
-                {{ element.name }}
-            </li>
-            </transition-group>
-        </draggable>
+                <h3 class="mb-3">{{ field.name }}</h3>
+                <draggable
+                    class="list-group"
+                    tag="ul"
+                    v-model="field.item"
+                    v-bind="dragOptions"
+                    @start="drag = true"
+                    @end="drag = false"
+                >
+                    <transition-group type="transition" :name="!drag ? 'flip-list' : null">
+                    <li
+                        class="list-group-item"
+                        v-for="element in field.item"
+                        :key="field.tag"
+                    >
+                        <i
+                        :class="
+                            element.fixed ? 'fa fa-anchor' : 'glyphicon glyphicon-pushpin'
+                        "
+                        aria-hidden="true"
+                        ></i>
+                        {{ element.name }}
+                    </li>
+                    </transition-group>
+                </draggable>
+            </v-col>
+        </v-row>
         </v-col>
     </v-row>
 </template>
@@ -131,9 +171,64 @@ export default {
         fieldsSystem: [],
         drag: false,
         loadingData: false,
+        loading2base: false,
     }),
     methods: {
+        async clearCache() {
+            await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/clearCache`, {
+                method: "DELETE",
+                headers: {
+                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                    'Content-Type': 'application/json;charset=utf-8'
+                },
+                body: JSON.stringify({
+                    uniqueSuffix: localStorage.getItem('uniqueSuffix')
+                })
+            })
 
+            localStorage.clear()
+
+            this.getFieldsSystem()
+
+            this.list = []
+            this.files = []
+        },
+        async getFieldsSystem() {
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsValues`)
+            const result = await data.json()
+
+            if(result.ok) {
+                this.fieldsSystem = []
+
+                result.fieldsValues.forEach((field, index) => {
+                    this.fieldsSystem.push({
+                        item: [],
+                        name: field.name,
+                        tag: field.tag,
+                        idInfo: field.idInfo
+                    })
+                })
+            }
+        },
+        async uploadToBase() {
+            this.loading2base = true
+
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/uploadToBase`, {
+                method: "POST",
+                headers: {
+                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                    'Content-Type': 'application/json;charset=utf-8'
+                },
+                body: JSON.stringify({
+                    uniqueSuffix: localStorage.getItem('uniqueSuffix'),
+                    file2field: this.fieldsSystem
+                })
+            })
+            const result = await data.json()
+
+            if(result.ok)
+                this.loading2base = false
+        },
     },
     components: {draggable},
     computed: {
@@ -152,8 +247,9 @@ export default {
                 this.loadingData = true
 
                 let formData = new FormData()
+                const uniqueSuffix = uuidv4()
 
-                formData.append('uniqueSuffix', uuidv4())
+                formData.append('uniqueSuffix', uniqueSuffix)
                 formData.append('xlxsFile', this.files[0], this.files[0].name)
 
                 const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getHeadFieldsExcel`, {
@@ -173,27 +269,75 @@ export default {
                     })
                 })
 
-                result.fieldsValues.forEach((field, index) => {
-                    this.fieldsSystem.push({
-                        item: [],
-                        name: field.name,
-                        tag: field.tag,
-                        idInfo: field.idInfo
-                    })
-                })
+                // result.fieldsValues.forEach((field, index) => {
+                //     this.fieldsSystem.push({
+                //         item: [],
+                //         name: field.name,
+                //         tag: field.tag,
+                //         idInfo: field.idInfo
+                //     })
+                // })
+
+                localStorage.setItem('list', JSON.stringify(this.list))
+                localStorage.setItem('fieldsSystem', JSON.stringify(this.fieldsSystem))
+                localStorage.setItem('uniqueSuffix', uniqueSuffix)
 
                 this.loadingData = false
+
+                console.log(this.list)
             } else {
                 this.list = []
                 this.fieldsSystem = []
             }
         }
     },
-    async beforeMount() {},
+    async beforeMount() {
+        const listItems = JSON.parse(localStorage.getItem('list'))
+        const fieldsSystem = JSON.parse(localStorage.getItem('fieldsSystem'))
+
+        if(listItems)
+            this.list = listItems
+
+        if(fieldsSystem)
+            this.fieldsSystem = fieldsSystem
+
+        const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsValues`)
+        const result = await data.json()
+
+        if(result.ok) {
+            this.fieldsSystem = []
+
+            result.fieldsValues.forEach(field => {
+                this.fieldsSystem.push({
+                    item: [],
+                    name: field.name,
+                    tag: field.tag,
+                    idInfo: field.idInfo
+                })
+            })
+        }
+    },
+    beforeDestroy() {
+        localStorage.setItem('list', JSON.stringify(this.list))
+        localStorage.setItem('fieldsSystem', JSON.stringify(this.fieldsSystem))
+    }
 }
 </script>
 
 <style scoped>
+.list-group-item {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.h-100 {
+    height: 100%;
+}
+.main-headings, .preloader {
+    height: 450px;
+    min-width: 270px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
 .lds-ring {
   display: inline-block;
   position: relative;

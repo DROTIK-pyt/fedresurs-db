@@ -54,36 +54,40 @@ export default {
             let resultText = ``
 
             keys.forEach(key => {
-                if(key != "createdAt" && key != "updatedAt" && key != "idCompany")
-                    resultText += `${cyrillicToTranslit.reverse(key)}: ${aCompany[key]}<br />`
+                if(key != "createdAt" && key != "updatedAt" && key != "idCompany") {
+                    if(key == "ssilka")
+                        resultText += `ссылка: ${aCompany[key]}<br />`
+                    else
+                        resultText += `${cyrillicToTranslit.reverse(key)}: ${aCompany[key]}<br />`
+                }
             })
 
             resultText += `<br />`
 
-            keys = Object.keys(this.contact)
-            const aContact = this.contact
+            // keys = Object.keys(this.contact)
+            // const aContact = this.contact
 
-            keys.forEach(key => {
-                if(key == "otherInfo") {
-                    resultText += `Прочая информация: ${aContact[key]}<br />`
-                }
-                else if(key == "phone") {
-                    resultText += `Телефон: ${aContact[key]}<br />`
-                }
-                else if(key == "email") {
-                    resultText += `E-mail: ${aContact[key]}<br />`
-                }
-                else if(key == "requisits") {
-                    resultText += `Реквизиты: ${aContact[key]}<br />`
-                }
-                else if(key != "createdAt" &&
-                        key != "updatedAt" &&
-                        key != "contactCompany" &&
-                        key != "idCompany" &&
-                        key != "idContactPerson") {
-                    resultText += `${cyrillicToTranslit.reverse(key)}: ${aContact[key]}<br />`
-                }
-            })
+            // keys.forEach(key => {
+            //     if(key == "otherInfo") {
+            //         resultText += `Прочая информация: ${aContact[key]}<br />`
+            //     }
+            //     else if(key == "phone") {
+            //         resultText += `Телефон: ${aContact[key]}<br />`
+            //     }
+            //     else if(key == "email") {
+            //         resultText += `E-mail: ${aContact[key]}<br />`
+            //     }
+            //     else if(key == "requisits") {
+            //         resultText += `Реквизиты: ${aContact[key]}<br />`
+            //     }
+            //     else if(key != "createdAt" &&
+            //             key != "updatedAt" &&
+            //             key != "contactCompany" &&
+            //             key != "idCompany" &&
+            //             key != "idContactPerson") {
+            //         resultText += `${cyrillicToTranslit.reverse(key)}: ${aContact[key]}<br />`
+            //     }
+            // })
 
             return resultText
         },

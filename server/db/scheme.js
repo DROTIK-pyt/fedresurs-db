@@ -113,7 +113,7 @@ const fieldsCompany = sequelize.define('fieldsCompany', {
     allowNull: false,
   },
   value: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT('long'),
     allowNull: false,
   }
 })
