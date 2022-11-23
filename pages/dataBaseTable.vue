@@ -4,6 +4,14 @@
         cols="12"
         sm="9"
         >
+        <v-autocomplete
+        v-model="entity"
+        :items="allEntities"
+        item-text="name"
+        item-value="idCore"
+        label="Выберите сущность"
+        solo
+        ></v-autocomplete>
         <v-card>
             <v-card-title>
             <v-text-field
@@ -16,14 +24,14 @@
             </v-card-title>
             <v-data-table
             :headers="headers"
-            :items="companies"
+            :items="entities"
             :search="search"
             >
             <template v-slot:item.actions="{ item }">
                 <v-icon
                     small
                     class="mr-2"
-                    @click="ShowCompany(item)"
+                    @click="showEntity(item)"
                 >
                     mdi-eye
                 </v-icon>
@@ -36,18 +44,17 @@
         sm="3"
         >
         </v-col>
-        <aCompanyVue
-            v-if="isOpenShowCompany"
-            :isOpen="isOpenShowCompany"
-            :company="aCompany"
-            :contact="aContact"
-            @closeView="closeShowCompany"
-        ></aCompanyVue>
+        <theEntityVue
+            v-if="isOpenShowEntity"
+            :isOpen="isOpenShowEntity"
+            :theEntity="theEntity"
+            @closeView="closeshowEntity"
+        ></theEntityVue>
     </v-row>
 </template>
 
 <script>
-import aCompanyVue from '../components/aCompany.vue'
+import theEntityVue from '../components/theEntity.vue'
 
 const serverSetting = require('../server/config/serverSetting.json')
 
@@ -58,20 +65,47 @@ export default {
         headers: [
             { text: 'Действия', value: 'actions', sortable: false },
         ],
-        companies: [],
+        entities: [],
 
-        aCompany: "",
-        aContact: "",
-        isOpenShowCompany: false
+        allEntities: [],
+        entity: "",
+
+        theEntity: "",
+        isOpenShowEntity: false
     }),
+    watch: {
+        entity() {
+            this.getAllDataFields(this.entity)
+        }
+    },
     methods: {
         async getAllData() {
-            // Получить 3 поля компаний для таблицы
-            let data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/get-semi-fields`)
+            // Получить все возможные сущности
+            let data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/entities`)
+            const result = await data.json()
+
+            // Вставить сущности в выпадающее поле
+            this.allEntities = result.entities
+        },
+        async getAllDataFields(idCore) {
+            // Предварительно очистить заголовки
+            this.headers = [{ text: 'Действия', value: 'actions', sortable: false },]
+            this.entities = []
+
+            // Получить поля сущности для таблицы
+            let data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8',
+                },
+                body: JSON.stringify({
+                    idCore
+                })
+            })
             const semiFields = await data.json()
 
             // Вставить поля в header
-            semiFields.forEach(field => {
+            semiFields.headers.forEach(field => {
                 this.headers.unshift({
                     text: `${field.name}`,
                     value: `${field.tag}`,
@@ -79,40 +113,41 @@ export default {
                 }) 
             })
 
-            // Получить данные компаний по столбцам
-            data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/company`)
-            const companies = await data.json()
+            // Получить данные сущности по столбцам
+            const entities = semiFields.fields
 
-            // Вставить данные компаний
-            if(companies.ok) {
-                this.companies = companies.results
-            }
+            // Вставить данные сущности
+            let elem = {}
+
+            entities.theCores.forEach(entity => {
+                entity.typeOfFields.forEach(field => {
+                    elem[`${field.tag}`] = field.coreTypeOfField.value
+                })
+                elem['idEntity'] = entity.idTheCore
+                this.entities.push(elem)
+                elem = {}
+            })
         },
-        async ShowCompany({ idCompany }) {
-            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/companyViaId`, {
+        async showEntity({idEntity}) {
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/entityViaId`, {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
                 },
                 body: JSON.stringify({
-                    idCompany
+                    idEntity
                 })
             })
-            const companies = await data.json()
-            console.log(companies)
+            const entities = await data.json()
 
-            const company = companies.results.shift()
-            const contact = companies.contact
-
-            this.aCompany = company
-            this.aContact = contact
-            this.isOpenShowCompany = true
+            this.theEntity = entities.item
+            this.isOpenShowEntity = true
         },
-        closeShowCompany() {
-            this.isOpenShowCompany = false
+        closeshowEntity() {
+            this.isOpenShowEntity = false
         },
     },
-    components: {aCompanyVue},
+    components: {theEntityVue},
     async beforeMount() {
         this.getAllData()
     },

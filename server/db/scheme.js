@@ -7,146 +7,92 @@ const sequelize = new Sequelize(dbBaseSetting.dataBase, dbBaseSetting.user, dbBa
 })
 
 // Таблицы
-const company = sequelize.define('company', {
-  idCompany: {
+const core = sequelize.define('core', {
+  idCore: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
+    allowNull: false,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  showInTable: {
+    type: DataTypes.BOOLEAN,
     allowNull: false,
   }
 })
 
-const event = sequelize.define('event', {
-  idEvent: {
+const theCore = sequelize.define('theCore', {
+  idTheCore: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
     allowNull: false,
   },
-  eventInfo: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-  },
 })
 
-const status = sequelize.define('status', {
-  idStatus: {
+const core2core = sequelize.define('core2core', {
+  idCore2core: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
     allowNull: false,
   },
-  type: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-  },
-  name: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-  },
-})
-
-const contactPerson = sequelize.define('contactPerson', {
-  idContactPerson: {
+  parentCoreId: {
     type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-    allowNull: false,
+    allowNull: false
   },
-  fio: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-  },
-  phone: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  email: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  requisits: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  otherInfo: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-})
-
-const historyPublic = sequelize.define('historyPublic', {
-  idHistoryPublic: {
+  childCoreId: {
     type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-    allowNull: false,
-  },
-  publication: {
-    type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: false
   },
 })
 
-const fieldsInfoOfCompany = sequelize.define('infoOfCompany', {
-  idInfo: {
+const typeOfField = sequelize.define('typeOfField', {
+  idTypeOfField: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
     allowNull: false,
   },
   tag: {
-    type: DataTypes.TEXT,
-    allowNull: false,
+    type: DataTypes.STRING,
+    allowNull: false
   },
   name: {
-    type: DataTypes.TEXT,
+    type: DataTypes.STRING,
     allowNull: false,
   }
 })
 
-const fieldsCompany = sequelize.define('fieldsCompany', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-    allowNull: false,
-  },
+const coreTypeOfField = sequelize.define('coreTypeOfField', {
   value: {
-    type: DataTypes.TEXT('long'),
+    type: DataTypes.TEXT('LONG'),
     allowNull: false,
   }
 })
 
 // Связи
-company.hasMany(event)
-event.belongsTo(company)
+core.belongsToMany(theCore, {through: "coreHasTheCore"})
+theCore.belongsToMany(core, {through: "coreHasTheCore"})
 
-status.belongsToMany(company, {through: "statusCompany"})
-company.belongsToMany(status, {through: "statusCompany"})
-
-status.belongsToMany(event, {through: "statusEvent"})
-event.belongsToMany(status, {through: "statusEvent"})
-
-contactPerson.belongsToMany(company, {through: "contactCompany"})
-company.belongsToMany(contactPerson, {through: "contactCompany"})
-
-historyPublic.belongsToMany(company, {through: "historyCompany"})
-company.belongsToMany(historyPublic, {through: "historyCompany"})
-
-company.belongsToMany(fieldsInfoOfCompany, {through: fieldsCompany})
-fieldsInfoOfCompany.belongsToMany(company, {through: fieldsCompany})
+theCore.belongsToMany(typeOfField, {through: coreTypeOfField, uniqueKey: "coreTypeOfFieldUnique"})
+typeOfField.belongsToMany(theCore, {through: coreTypeOfField, uniqueKey: "coreTypeOfFieldUnique"})
+theCore.hasMany(coreTypeOfField)
+coreTypeOfField.belongsTo(theCore)
+typeOfField.hasMany(coreTypeOfField)
+coreTypeOfField.belongsTo(typeOfField)
 
 module.exports = {
   dbBaseSetting,
   DataTypes,
   sequelize,
   Op,
-  company,
-  fieldsInfoOfCompany,
-  historyPublic,
-  contactPerson,
-  status,
-  event,
-  fieldsCompany,
+  core,
+  theCore,
+  core2core,
+  typeOfField,
+  coreTypeOfField,
 }

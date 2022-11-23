@@ -1,4 +1,4 @@
-const { company, fieldsInfoOfCompany, historyPublic, contactPerson, status, event, fieldsCompany, Op } = require('../db/scheme')
+const { core, core2core, typeOfField, theCore, coreTypeOfField, Op } = require('../db/scheme')
 const CyrillicToTranslit = require('cyrillic-to-translit-js')
 const parser = require('simple-excel-to-json')
 const cyrillicToTranslit = new CyrillicToTranslit()
@@ -25,38 +25,101 @@ function ExcelDateToJSDate(serial) {
  }
 
 module.exports = function(app, upload) {
+    app.post('/field', async (req, res) => {
+        const { idEntity } = req.body
 
-    app.get('/get-semi-fields', async (req, res) => {
-        const fields = await fieldsInfoOfCompany.findAll({
-            attributes: [ 'tag', 'name' ],
-            limit: 4
+        const data = await theCore.findOne({
+            where: {
+                idTheCore: idEntity
+            },
+            include: {
+                model: core
+            },
         })
 
-        res.json(fields)
+        res.json(data)
     })
 
-    app.get('/fields', async (req, res) => {
-        const fields = await fieldsInfoOfCompany.findAll({
-            attributes: [ 'tag', 'name' ],
+    app.post('/fields', async (req, res) => {
+        const { idCore } = req.body
+
+        const data = await core.findOne({
+            where: {
+                idCore
+            },
+            include: {
+                model: theCore,
+                include: {
+                    model: typeOfField
+                }
+            },
         })
 
-        res.json(fields)
+        const heading = []
+
+        if(data?.theCores.length) {
+            data.theCores[0].typeOfFields.forEach(field => {
+                heading.push({
+                    name: field.name,
+                    tag: field.tag,
+                })
+            })
+            res.json({ok: true, fields: data, headers: heading})
+        } else {
+            res.json({ok: true, fields: data})
+        }
+    })
+
+    app.get('/entities', async (req, res) => {
+        const data = await core.findAll({
+            where: {
+                showInTable: true
+            }
+        })
+
+        res.json({ok: true, entities: data})
     })
 
     app.post('/add-new-field', async (req, res) => {
         const { newFieldName } = req.body
 
         if (newFieldName != "") {
-            const foundFields = await fieldsInfoOfCompany.findAll({
+            const foundFields = await typeOfField.findAll({
                 where: {    
                     name: newFieldName
                 }
             })
 
             if(foundFields.length === 0) {
-                await fieldsInfoOfCompany.create({
+                await typeOfField.create({
                     name: newFieldName,
                     tag: cyrillicToTranslit.transform(newFieldName, '-').toLowerCase()
+                })
+            } else {
+                res.json({ok: false, msg: "Есть совпадения по именам."})
+                return
+            }
+        } else {
+            res.json({ok: false, msg: "Поля не должны быть пустыми."})
+            return
+        }
+        res.json({ok: true})
+    })
+
+    app.post('/add-new-entity', async (req, res) => {
+        const { newFieldName, showInTable } = req.body
+
+        if (newFieldName != "") {
+            const foundFields = await core.findAll({
+                where: {    
+                    name: newFieldName
+                }
+            })
+
+            if(foundFields.length === 0) {
+                await core.create({
+                    name: newFieldName,
+                    showInTable
                 })
             } else {
                 res.json({ok: false, msg: "Есть совпадения по именам."})
@@ -77,13 +140,13 @@ module.exports = function(app, upload) {
             field = fieldsOfComponiesData[i]
 
             if(field.name != "") {
-                const foundFields = await fieldsInfoOfCompany.findAll({
+                const foundFields = await typeOfField.findAll({
                     where: {    
                         name: field.name
                     }
                 })
                 if(foundFields.length === 0) {
-                    await fieldsInfoOfCompany.update({
+                    await typeOfField.update({
                         name: field.name,
                         tag: cyrillicToTranslit.transform(field.name, '-').toLowerCase()
                     }, {
@@ -100,10 +163,34 @@ module.exports = function(app, upload) {
         res.json({ok: true})
     })
 
+    app.put('/cores', async (req, res) => {
+        const { fieldsOfComponiesData } = req.body
+
+        let field
+        for(let i = 0; i < fieldsOfComponiesData.length; i++) {
+            field = fieldsOfComponiesData[i]
+
+            if(field.name != "") {
+                await core.update({
+                    name: field.name,
+                    showInTable: field.showInTable
+                }, {
+                    where: {
+                        idCore: field.idCore
+                    }
+                })
+            } else {
+                res.json({ok: false, msg: "Поля не должны быть пустыми."})
+                return
+            }
+        }
+        res.json({ok: true})
+    })
+
     app.delete('/fields', async (req, res) => {
         const { tag } = req.body
 
-        await fieldsInfoOfCompany.destroy({
+        await typeOfField.destroy({
             where: {
                 tag
             }
@@ -112,79 +199,36 @@ module.exports = function(app, upload) {
         res.json({ok: true})
     })
 
-    app.get('/company', async (req, res) => {
-        const items = await company.findAll()
+    app.post('/entityViaId', async (req, res) => {
+        const { idEntity } = req.body
 
-        let results = []
-        let fieldsValues = await fieldsCompany.findAll()
-
-        for (let i = 0; i < items.length; i++) {
-            let fvs = {}
-            fieldsValues.forEach(fv => {
-                if(fv.companyIdCompany === items[i].idCompany) {
-                    fvs[`${fv.infoOfCompanyIdInfo}`] = fv.value
-                }
-            })
-
-            let fields = await items[i].getInfoOfCompanies()
-
-            let result = {}
-            fields.forEach(field => {
-                result[`${field.tag}`] = fvs[`${field.idInfo}`]
-            })
-
-            result[`idCompany`] = items[i].idCompany
-
-            results.push(result)
-        }
-
-        res.json({ok: true, results})
-    })
-
-    app.post('/companyViaId', async (req, res) => {
-        const { idCompany } = req.body
-        console.log(cache[0].readFile)
-
-        const items = await company.findAll({
+        const item = await theCore.findOne({
             where: {
-                idCompany
-            }
+                idTheCore: idEntity,
+            },
+            include: typeOfField
         })
 
-        const aCompany = items[0]
-        // const contact = await aCompany.getContactPeople()
+        res.json({ok: true, item})
+    })
 
-        let results = []
-        let fieldsValues = await fieldsCompany.findAll()
+    app.post('/linkedEntity', async (req, res) => {
+        const { idEntity } = req.body
 
-        for (let i = 0; i < items.length; i++) {
-            let fvs = {}
-            fieldsValues.forEach(fv => {
-                if(fv.companyIdCompany === items[i].idCompany) {
-                    fvs[`${fv.infoOfCompanyIdInfo}`] = fv.value
-                }
-            })
+        const items = await core2core.findAll({
+            where: {
+                parentCoreId: idEntity
+            },
+        })
 
-            let fields = await items[i].getInfoOfCompanies()
-
-            let result = {}
-            fields.forEach(field => {
-                result[`${field.tag}`] = fvs[`${field.idInfo}`]
-            })
-
-            result[`idCompany`] = items[i].idCompany
-
-            results.push(result)
-        }
-
-        res.json({ok: true, results})
+        res.json({ok: true, items})
     })
 
     app.post('/getHeadFieldsExcel', upload.single('xlxsFile'), async (req, res) => {
         const { file } = req
         const { uniqueSuffix } = req.body
 
-        let fieldsValues = await fieldsInfoOfCompany.findAll()
+        let fieldsValues = await typeOfField.findAll()
 
         const readFile = parser.parseXls2Json(req.originalSrc)
         readFile[0].forEach(field => {
@@ -200,13 +244,28 @@ module.exports = function(app, upload) {
     })
 
     app.get('/fieldsValues', async (req, res) => {
-        const fieldsValues = await fieldsInfoOfCompany.findAll()
+        const fieldsValues = await typeOfField.findAll()
 
         res.json({ok: true, fieldsValues})
     })
 
+    app.get('/cores', async (req, res) => {
+        const cores = await core.findAll()
+
+        res.json({ok: true, cores})
+    })
+
+    app.delete('/cores', async (req, res) => {
+        const { idCore } = req.body
+        await core.destroy({
+            where: { idCore }
+        })
+
+        res.json({ok: true})
+    })
+
     app.post('/cacheItem', async (req, res) => {
-        const { uniqueSuffix } = req.body        
+        const { uniqueSuffix } = req.body   
 
         res.json({ok: true, readFile: cache.find(item => item.id === uniqueSuffix)?.readFile})
     })
@@ -237,24 +296,7 @@ module.exports = function(app, upload) {
 
         console.log('start upload..', cache)
         
-        for(let i = 0; i < readFile.length; i++) {
-            let rf = readFile[i]
-
-            let aCompany = await company.create()
-
-            for(let g = 0; g < file2field.length; g++) {
-                let f2f = file2field[g]
-
-                let idInfo = f2f.idInfo
-                let value = rf[`${f2f.item[0].name}`]
-
-                await fieldsCompany.create({
-                    value,
-                    companyIdCompany: aCompany.idCompany,
-                    infoOfCompanyIdInfo: idInfo
-                })
-            }
-        }
+        
 
         console.log('success')
 

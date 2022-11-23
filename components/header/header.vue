@@ -20,7 +20,7 @@
                     dark
                     color="purple"
                     >
-                        Компании
+                        Таблица сущностей
                     </v-btn>
                 </nuxt-link>
                 <nuxt-link to="/fieldsCompany" active-class="active-btn">
@@ -29,7 +29,16 @@
                     dark
                     color="purple"
                     >
-                        Поля компаний
+                        Поля сущностей
+                    </v-btn>
+                </nuxt-link>
+                <nuxt-link to="/entities" active-class="active-btn">
+                    <v-btn
+                    depressed
+                    dark
+                    color="purple"
+                    >
+                        Сущности
                     </v-btn>
                 </nuxt-link>
             </nav>

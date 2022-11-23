@@ -312,7 +312,7 @@ export default {
                     item: [],
                     name: field.name,
                     tag: field.tag,
-                    idInfo: field.idInfo
+                    idTypeOfField: field.idTypeOfField
                 })
             })
         }

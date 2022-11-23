@@ -7,10 +7,10 @@
             >
             <h1>БУДЬТЕ ВНИМАТЕЛЬНЫ!</h1>
             <p class="mb-4">
-                Действия на этой странице затрагивают данные ВСЕХ компаний и будут необратимы.<br />
+                Действия на этой странице затрагивают данные ВСЕХ сущностей и будут необратимы.<br />
                 Рекомендуется посещать эту страницу при крайней необходимости.
             </p>
-            <h2>Добавление поля</h2>
+            <h2>Добавление сущности</h2>
             <div class="d-flex align-center">
                 <v-btn
                     dark
@@ -20,6 +20,10 @@
                 >
                     Добавить
                 </v-btn>
+                <v-switch
+                    v-model="showInTable"
+                    label="Видеть в таблице"
+                ></v-switch>
             </div>
             </v-col>
             <v-col
@@ -28,7 +32,7 @@
             >
                 <v-text-field
                     v-model="newFieldName"
-                    label="Новое поле"
+                    label="Новая сущность"
                     outlined
                     :error-messages="errorAdded"
                 ></v-text-field>
@@ -39,7 +43,7 @@
                 cols="12"
                 sm="12"
             >
-            <h2>Активные поля компаний</h2>
+            <h2>Активные сущности</h2>
             <div class="d-flex align-center">
                 <v-btn
                     dark
@@ -56,7 +60,7 @@
             </div>
             <div v-show="toDelete">
                 <p>
-                    Осторожно! Действия необратимы и после удаления - данные компаний теряются.
+                    Осторожно! Действия необратимы и после удаления - данные сущностей теряются.
                     <br />Если режим был включен, а вы не собираетесь удалять поля - рекомендуется выключить режим удаления.
                 </p>
             </div>
@@ -66,14 +70,20 @@
                     <v-col
                     cols="12"
                     sm="10"
-                    
                     >
-                        <v-text-field
-                            v-model="fieldsOfCompony.name"
-                            label="Наименование поля компании"
-                            outlined
-                            :error-messages="errorChanged"
-                        ></v-text-field>
+                        <div class="d-flex justify-space-between">
+                            <v-text-field
+                                v-model="fieldsOfCompony.name"
+                                label="Наименование сущности"
+                                outlined
+                                :error-messages="errorChanged"
+                                class="mr-6"
+                            ></v-text-field>
+                            <v-switch
+                                v-model="fieldsOfCompony.showInTable"
+                                label="Видеть в таблице"
+                            ></v-switch>
+                        </div>
                     </v-col>
                     <v-col
                     cols="12"
@@ -84,7 +94,7 @@
                         color="pink"
                         class="mt-2"
                         v-if="toDelete"
-                        @click="deleteField(fieldsOfCompony.tag)"
+                        @click="deleteField(fieldsOfCompony)"
                         >
                         <v-icon>mdi-close</v-icon>
                         </v-btn>
@@ -107,7 +117,7 @@
 const serverSetting = require('../server/config/serverSetting.json')
 
 export default {
-    name: "FieldsOfCompony",
+    name: "entities",
     data: () => ({
         fieldsOfComponiesData: [],
         newFieldName: "",
@@ -115,19 +125,22 @@ export default {
         errorChanged: "",
         toDelete: false,
         loading: true,
+
+        showInTable: false,
     }),
     components: {},
     methods: {
         async addField() {
             this.errorAdded = ""
 
-            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/add-new-field`, {
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/add-new-entity`, {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
                 },
                 body: JSON.stringify({
-                    newFieldName: this.newFieldName
+                    newFieldName: this.newFieldName,
+                    showInTable: this.showInTable
                 })
             })
 
@@ -137,13 +150,14 @@ export default {
             }
 
             this.newFieldName = ""
+            this.showInTable = false
 
             this.getAllData()
         },
         async saveChanges() {
             this.errorChanged = ""
 
-            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/cores`, {
                 method: "PUT",
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
@@ -159,32 +173,33 @@ export default {
 
             this.getAllData()
         },
-        async deleteField(tag) {
-            await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
+        async deleteField({idCore}) {
+            await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/cores`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
                 },
                 body: JSON.stringify({
-                    tag
+                    idCore
                 })
             })
 
             this.getAllData()
         },
         async getAllData() {
-            // Получить поля компаний
-            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsValues`)
+            // Получить сущности
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/cores`)
             const fieldsOfComponies = await data.json()
             console.log(fieldsOfComponies)
 
-            // Вставить их в данные
+            // Вставить их в таблицу
             this.fieldsOfComponiesData = []
 
-            fieldsOfComponies.fieldsValues.forEach(field => {
+            fieldsOfComponies.cores.forEach(field => {
                 this.fieldsOfComponiesData.unshift({
                     name: field.name,
-                    tag: field.tag,
+                    idCore: field.idCore,
+                    showInTable: field.showInTable,
                 })
             })
         }
