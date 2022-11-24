@@ -76,6 +76,8 @@ export default {
     watch: {
         entity() {
             this.getAllDataFields(this.entity)
+
+            this.search = ""
         }
     },
     methods: {
@@ -106,11 +108,13 @@ export default {
 
             // Вставить поля в header
             semiFields.headers.forEach(field => {
-                this.headers.unshift({
-                    text: `${field.name}`,
-                    value: `${field.tag}`,
-                    sortable: false
-                }) 
+                if(field.showInColumnTable) {
+                    this.headers.unshift({
+                        text: `${field.name}`,
+                        value: `${field.tag}`,
+                        sortable: false
+                    }) 
+                }
             })
 
             // Получить данные сущности по столбцам
@@ -145,6 +149,8 @@ export default {
         },
         closeshowEntity() {
             this.isOpenShowEntity = false
+
+            this.theEntity = false
         },
     },
     components: {theEntityVue},

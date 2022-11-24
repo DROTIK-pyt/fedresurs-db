@@ -68,12 +68,19 @@
                     sm="10"
                     
                     >
-                        <v-text-field
-                            v-model="fieldsOfCompony.name"
-                            label="Наименование поля компании"
-                            outlined
-                            :error-messages="errorChanged"
-                        ></v-text-field>
+                        <div class="d-flex justify-space-between">
+                            <v-text-field
+                                v-model="fieldsOfCompony.name"
+                                label="Наименование поля компании"
+                                outlined
+                                :error-messages="errorChanged"
+                                class="mr-5"
+                            ></v-text-field>
+                            <v-switch
+                                v-model="fieldsOfCompony.showInColumnTable"
+                                label="Видимость колонки"
+                            ></v-switch>
+                        </div>
                     </v-col>
                     <v-col
                     cols="12"
@@ -185,6 +192,7 @@ export default {
                 this.fieldsOfComponiesData.unshift({
                     name: field.name,
                     tag: field.tag,
+                    showInColumnTable: field.showInColumnTable
                 })
             })
         }

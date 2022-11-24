@@ -64,6 +64,11 @@ const typeOfField = sequelize.define('typeOfField', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  showInColumnTable: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
   }
 })
 

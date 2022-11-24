@@ -64,38 +64,18 @@ export default {
                     'Content-Type': 'application/json;charset=utf-8',
                 },
                 body: JSON.stringify({
-                    idEntity: idTheCore
+                    idTheCore
                 })
             })
             const result = await data.json()
-            const ids = []
 
-            result.items.forEach(item => {
-                ids.push(item.childCoreId)
-            })
-
-            for(let i = 0; i < ids.length; i++) {
-                let id = ids[i]
-
-                const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/field`, {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json;charset=utf-8',
-                    },
-                    body: JSON.stringify({
-                        idEntity: id
+            if(result?.cores) {
+                result.cores.forEach(core => {
+                    this.allEntities.push({
+                        name: core.name,
+                        idCore: core.idCore
                     })
                 })
-                const result = await data.json()
-
-                if(result?.cores) {
-                    result.cores.forEach(core => {
-                        this.allEntities.push({
-                            name: core.name,
-                            idCore: core.idCore
-                        })
-                    })
-                }
             }
         },
     },
@@ -120,22 +100,19 @@ export default {
         async entity() {
             this.information = ""
 
-            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/linkedFields`, {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
                 },
                 body: JSON.stringify({
-                    idCore: this.entity
+                    idTheCore: this.theEntity.idTheCore
                 })
             })
             const result = await data.json()
 
-            result.fields.theCores.forEach(core => {
-                core.typeOfFields.forEach(field => {
-                    this.information += `${field.name}: ${field.coreTypeOfField.value}<br />`
-                })
-                this.information += "<br/>"
+            result.fields.typeOfFields.forEach(field => {
+                this.information += `${field.name}: ${field.coreTypeOfField.value}<br />`
             })
         },
     },

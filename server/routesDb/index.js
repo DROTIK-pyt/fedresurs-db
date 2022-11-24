@@ -62,12 +62,35 @@ module.exports = function(app, upload) {
                 heading.push({
                     name: field.name,
                     tag: field.tag,
+                    showInColumnTable: field.showInColumnTable
                 })
             })
             res.json({ok: true, fields: data, headers: heading})
         } else {
             res.json({ok: true, fields: data})
         }
+    })
+
+    app.post('/linkedFields', async (req, res) => {
+        const { idTheCore } = req.body
+        console.log(idTheCore)
+
+        const item = await core2core.findOne({
+            where: {
+                parentCoreId: idTheCore
+            }
+        })
+
+        const data = await theCore.findOne({
+            where: {
+                idTheCore: item.childCoreId
+            },
+            include: {
+                model: typeOfField
+            }
+        })
+
+        res.json({ok: true, fields: data})
     })
 
     app.get('/entities', async (req, res) => {
@@ -140,21 +163,15 @@ module.exports = function(app, upload) {
             field = fieldsOfComponiesData[i]
 
             if(field.name != "") {
-                const foundFields = await typeOfField.findAll({
-                    where: {    
-                        name: field.name
+                await typeOfField.update({
+                    name: field.name,
+                    tag: cyrillicToTranslit.transform(field.name, '-').toLowerCase(),
+                    showInColumnTable: field.showInColumnTable
+                }, {
+                    where: {
+                        tag: field.tag
                     }
                 })
-                if(foundFields.length === 0) {
-                    await typeOfField.update({
-                        name: field.name,
-                        tag: cyrillicToTranslit.transform(field.name, '-').toLowerCase()
-                    }, {
-                        where: {
-                            tag: field.tag
-                        }
-                    })
-                }
             } else {
                 res.json({ok: false, msg: "Поля не должны быть пустыми."})
                 return
@@ -213,15 +230,22 @@ module.exports = function(app, upload) {
     })
 
     app.post('/linkedEntity', async (req, res) => {
-        const { idEntity } = req.body
+        const { idTheCore } = req.body
 
-        const items = await core2core.findAll({
+        const item = await core2core.findOne({
             where: {
-                parentCoreId: idEntity
-            },
+                parentCoreId: idTheCore
+            }
         })
 
-        res.json({ok: true, items})
+        const theCores = await theCore.findOne({
+            where: {
+                idTheCore: item.childCoreId,
+            },
+            include: core
+        })
+
+        res.json({ok: true, cores: theCores.cores})
     })
 
     app.post('/getHeadFieldsExcel', upload.single('xlxsFile'), async (req, res) => {
@@ -232,7 +256,8 @@ module.exports = function(app, upload) {
 
         const readFile = parser.parseXls2Json(req.originalSrc)
         readFile[0].forEach(field => {
-            field['Сообщение:_дата'] = ExcelDateToJSDate(field['Сообщение:_дата']).toLocaleDateString()
+            if(field['Сообщение:_дата'])
+                field['Сообщение:_дата'] = ExcelDateToJSDate(field['Сообщение:_дата']).toLocaleDateString()
         })
 
         cache.push({
@@ -290,16 +315,124 @@ module.exports = function(app, upload) {
     })
 
     app.post('/uploadToBase', async(req, res) => {
-        const { uniqueSuffix, file2field } = req.body
+        const { uniqueSuffix, file2field, relations, cond } = req.body
 
         const readFile = cache.find(c => c.id === uniqueSuffix).readFile[0]
 
-        console.log('start upload..', cache)
-        
-        
+        console.log('start upload..')
 
+        let prepareRelations = []
+        let newTheCore
+        let wasOverlaped = false
+
+        for(let i = 0; i < readFile.length; i++) {
+            let item = readFile[i]
+            prepareRelations[i] = []
+
+            for(let g = 0; g < file2field.length; g++) {
+                let f2f = file2field[g]
+
+                let aCore = await core.findOne({
+                    where: {
+                        idCore: f2f.idCore
+                    }
+                })
+
+                // Проверить наличие совпадений полей сущности и предпринять меры
+
+                // for(let k = 0; k < f2f.fields.length; k++) {
+                //     let field = f2f.fields[k]
+
+                //     if(field.item.length) {
+                //         let data = item[`${field.item[0].name}`]
+                //         let baseField = await typeOfField.findOne({
+                //             where: {
+                //                 idTypeOfField: field.idTypeOfField
+                //             }
+                //         })
+
+                //         const overlap = 
+                //     }
+                // }
+
+                // if(wasOverlaped) {
+                //     continue
+                // }
+
+                newTheCore = await theCore.create()
+
+                await aCore.addTheCore(newTheCore)
+
+                for(let k = 0; k < f2f.fields.length; k++) {
+                    let field = f2f.fields[k]
+
+                    if(field.item.length) {
+                        let data = item[`${field.item[0].name}`]
+                        let baseField = await typeOfField.findOne({
+                            where: {
+                                idTypeOfField: field.idTypeOfField
+                            }
+                        })
+                        await newTheCore.addTypeOfField(baseField, { through: { value: data } })
+                    }
+                }
+
+                prepareRelations[i].push({
+                    idCore: f2f.idCore,
+                    newTheCore,
+                })
+            }
+        }
+
+        let parent = false, 
+            child = false
+
+        console.log()
+        console.log('start create realtions')
+
+        for(let g = 0, t = 0, r = 0; ; ) {
+            let pr = prepareRelations[t]
+            let relation = relations[g]
+        
+            if(relation.parentCoreId === pr[r]?.idCore) {
+                parent = pr[r]
+                r++
+                continue
+            }
+            if (relation.childCoreId === pr[r]?.idCore) {
+                child = pr[r]
+
+                await core2core.create({
+                    parentCoreId: parent.newTheCore.idTheCore,
+                    childCoreId: child.newTheCore.idTheCore,
+                })
+
+                parent = false
+                child = false
+                g = 0
+                r++
+                continue
+            }
+        
+            g++
+            r++
+            if(g >= relations.length) {
+                g = 0
+            }
+            if(r >= pr.length) {
+                parent = false
+                child = false
+                t++
+                r = 0
+            }
+            if(t >= prepareRelations.length) {
+                break
+            }
+        }
+
+        console.log()
         console.log('success')
 
-        res.json({ok: true})
+        res.json({ok:true})
     })
 }

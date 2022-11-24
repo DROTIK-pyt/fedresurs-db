@@ -72,6 +72,7 @@
         <v-col
         cols="12"
         sm="3"
+        class=""
         >
         <div class="preloader" v-if="loadingData">
             <h3 class="mb-3">Заголовки</h3>
@@ -80,7 +81,7 @@
         <div v-else class="main-headings">
         <h3 class="mb-3">Заголовки</h3>
             <draggable
-                class="list-group"
+                class="list-group pr-2"
                 tag="ul"
                 v-model="list"
                 v-bind="dragOptions"
@@ -110,38 +111,125 @@
             cols="12"
             sm="9"
         >
-        <v-row>
+        <v-row class="overflowed">
             <v-col
             cols="12"
-            sm="3"
-            v-for="field in fieldsSystem"
-            :key="field.tag"
+            sm="12"
             >
-                <h3 class="mb-3">{{ field.name }}</h3>
-                <draggable
-                    class="list-group"
-                    tag="ul"
-                    v-model="field.item"
-                    v-bind="dragOptions"
-                    @start="drag = true"
-                    @end="drag = false"
-                >
-                    <transition-group type="transition" :name="!drag ? 'flip-list' : null">
-                    <li
-                        class="list-group-item"
-                        v-for="element in field.item"
-                        :key="field.tag"
-                    >
-                        <i
-                        :class="
-                            element.fixed ? 'fa fa-anchor' : 'glyphicon glyphicon-pushpin'
-                        "
-                        aria-hidden="true"
-                        ></i>
-                        {{ element.name }}
-                    </li>
-                    </transition-group>
-                </draggable>
+            <v-tabs
+                v-model="tabs"
+                centered
+            >
+                <v-tab>
+                    Данные
+                </v-tab>
+                <v-tab>
+                    Связи
+                </v-tab>
+            </v-tabs>
+            </v-col>
+            <v-col
+            cols="12"
+            sm="12"
+            >
+                <v-tabs-items v-model="tabs">
+                    <v-tab-item>
+                        <v-col
+                        cols="12"
+                        sm="12"
+                        v-for="core in fieldsSystem"
+                        :key="core?.idCore"
+                        class="bordered"
+                        >
+                            <h2 class="mb-3 bordered-black px-2" v-if="core?.idCore">{{ core.name }}</h2>
+                            <v-row v-if="core?.idCore">
+                                <v-col
+                                    cols="12"
+                                    sm="3"
+                                    v-for="field in core.fields"
+                                    :key="field.tag"
+                                >
+                                <h4 class="mb-1 bordered px-1">{{ field.name }}</h4>
+                                <draggable
+                                    class="list-group bordered pa-3"
+                                    tag="ul"
+                                    v-model="field.item"
+                                    v-bind="dragOptions"
+                                    @start="drag = true"
+                                    @end="drag = false"
+                                >
+                                    <transition-group type="transition" :name="!drag ? 'flip-list' : null">
+                                    <li
+                                        class="list-group-item"
+                                        v-for="element in field.item"
+                                        :key="element.tag+core.name"
+                                    >
+                                        <i
+                                        :class="
+                                            element.fixed ? 'fa fa-anchor' : 'glyphicon glyphicon-pushpin'
+                                        "
+                                        aria-hidden="true"
+                                        ></i>
+                                        {{ element.name }}
+                                    </li>
+                                    </transition-group>
+                                </draggable>
+                                </v-col>
+                            </v-row>
+                        </v-col>
+                    </v-tab-item>
+                    <v-tab-item>
+                        <v-col
+                        cols="12"
+                        sm="12"
+                        class="bordered"
+                        >
+                            <v-btn
+                                depressed
+                                color="primary"
+                                @click="addRelation"
+                                class="mb-5"
+                            >
+                                Добавить связь
+                            </v-btn>
+                            <div class="d-flex justify-space-between" v-for="relation, index in relations" :key="index">
+                                <v-autocomplete
+                                    clearable
+                                    item-text="name"
+                                    item-value="idCore"
+                                    v-model="relation.parentCoreId"
+                                    label="Сущность"
+                                    :items="cores"
+                                    class="mr-3"
+                                    filled
+                                ></v-autocomplete>
+                                <v-icon
+                                    x-large
+                                >
+                                    mdi-redo
+                                </v-icon>
+                                <v-autocomplete
+                                    clearable
+                                    item-text="name"
+                                    item-value="idCore"
+                                    v-model="relation.childCoreId"
+                                    label="Сущность"
+                                    :items="cores"
+                                    class="ml-3"
+                                    filled
+                                ></v-autocomplete>
+                                <v-btn
+                                    depressed
+                                    color="error"
+                                    @click="deleteRelation(index)"
+                                    class="ml-3"
+                                >
+                                    Удалить
+                                </v-btn>
+                            </div>
+                        </v-col>
+                    </v-tab-item>
+                </v-tabs-items>
             </v-col>
         </v-row>
         </v-col>
@@ -172,8 +260,36 @@ export default {
         drag: false,
         loadingData: false,
         loading2base: false,
+
+        // Подготовить вывод действий на случай совпадения полей сущности
+
+        // conditionWithRepeat: [
+        //     {
+        //         name: "Пропустить",
+        //         tag: "skip"
+        //     },
+        //     {
+        //         name: "Обновить",
+        //         tag: "update"
+        //     },
+        // ],
+        // cond: "",
+
+        tabs: null,
+
+        cores: [],
+        relations: [],
     }),
     methods: {
+        addRelation() {
+            this.relations.push({
+                parentCoreId: 0,
+                childCoreId: 0
+            })
+        },
+        deleteRelation(index) {
+            this.relations.splice(index, 1)
+        },
         async clearCache() {
             await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/clearCache`, {
                 method: "DELETE",
@@ -194,21 +310,48 @@ export default {
             this.files = []
         },
         async getFieldsSystem() {
+            const listItems = JSON.parse(localStorage.getItem('list'))
+            const fieldsSystem = JSON.parse(localStorage.getItem('fieldsSystem'))
+
+            if(listItems)
+                this.list = listItems
+
+            if(fieldsSystem)
+                this.fieldsSystem = fieldsSystem
+
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsValues`)
             const result = await data.json()
 
+            const data2 = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/cores`)
+            const resultCores = await data2.json()
+
+            resultCores.cores.forEach(core => {
+                this.cores.push({
+                    idCore: core.idCore,
+                    name: core.name
+                })
+            })
+
             if(result.ok) {
                 this.fieldsSystem = []
-
-                result.fieldsValues.forEach((field, index) => {
+                resultCores.cores.forEach((core, index) => {
                     this.fieldsSystem.push({
-                        item: [],
-                        name: field.name,
-                        tag: field.tag,
-                        idInfo: field.idInfo
+                        idCore: core.idCore,
+                        name: core.name,
+                        fields: []
+                    })
+                    result.fieldsValues.forEach(field => {
+                        this.fieldsSystem[index].fields.push({
+                            item: [],
+                            name: field.name,
+                            tag: field.tag,
+                            idTypeOfField: field.idTypeOfField
+                        })
                     })
                 })
             }
+
+            console.log(this.fieldsSystem)
         },
         async uploadToBase() {
             this.loading2base = true
@@ -221,7 +364,9 @@ export default {
                 },
                 body: JSON.stringify({
                     uniqueSuffix: localStorage.getItem('uniqueSuffix'),
-                    file2field: this.fieldsSystem
+                    file2field: this.fieldsSystem,
+                    relations: this.relations,
+                    cond: this.cond
                 })
             })
             const result = await data.json()
@@ -269,15 +414,6 @@ export default {
                     })
                 })
 
-                // result.fieldsValues.forEach((field, index) => {
-                //     this.fieldsSystem.push({
-                //         item: [],
-                //         name: field.name,
-                //         tag: field.tag,
-                //         idInfo: field.idInfo
-                //     })
-                // })
-
                 localStorage.setItem('list', JSON.stringify(this.list))
                 localStorage.setItem('fieldsSystem', JSON.stringify(this.fieldsSystem))
                 localStorage.setItem('uniqueSuffix', uniqueSuffix)
@@ -292,30 +428,7 @@ export default {
         }
     },
     async beforeMount() {
-        const listItems = JSON.parse(localStorage.getItem('list'))
-        const fieldsSystem = JSON.parse(localStorage.getItem('fieldsSystem'))
-
-        if(listItems)
-            this.list = listItems
-
-        if(fieldsSystem)
-            this.fieldsSystem = fieldsSystem
-
-        const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsValues`)
-        const result = await data.json()
-
-        if(result.ok) {
-            this.fieldsSystem = []
-
-            result.fieldsValues.forEach(field => {
-                this.fieldsSystem.push({
-                    item: [],
-                    name: field.name,
-                    tag: field.tag,
-                    idTypeOfField: field.idTypeOfField
-                })
-            })
-        }
+        this.getFieldsSystem()
     },
     beforeDestroy() {
         localStorage.setItem('list', JSON.stringify(this.list))
@@ -325,6 +438,16 @@ export default {
 </script>
 
 <style scoped>
+.overflowed {
+    height: 75vh;
+    overflow-y: auto;
+}
+.bordered, .bordered-black {
+    border: 1px solid #ccc;
+}
+.bordered-black {
+    border-color: #000;
+}
 .list-group-item {
     text-overflow: ellipsis;
     overflow: hidden;
