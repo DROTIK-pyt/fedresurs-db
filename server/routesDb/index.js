@@ -331,7 +331,7 @@ module.exports = function(app, upload) {
         let wasOverlaped
 
         for(let i = 0; i < readFile.length; i++) {
-            wasOverlaped = false
+            wasOverlaped = {}
             let item = readFile[i]
             prepareRelations[i] = []
 
@@ -348,27 +348,24 @@ module.exports = function(app, upload) {
                                 where: {
                                     idTypeOfField: f2f.uniqueField
                                 },
-                                include: coreTypeOfField
-                            })
-
-                            if(!wasOverlaped?.is) {
-                                for(let h = 0; h < baseField.coreTypeOfFields.length; h++) {
-                                    let value = baseField.coreTypeOfFields[h]
-
-                                    if(value.value === data) {
-                                        wasOverlaped = {
-                                            is: true,
-                                            theCoreIdTheCore: value.theCoreIdTheCore
-                                        }
-                                        break
+                                include: {
+                                    model: coreTypeOfField,
+                                    where: {
+                                        value: data
                                     }
                                 }
+                            })
+
+                            if(baseField) {
+                                wasOverlaped.is = true
+                                wasOverlaped.theCoreIdTheCore = baseField.coreTypeOfFields[0].theCoreIdTheCore
+                                break
                             }
                         }
 
                         if(wasOverlaped?.is) break
                     }
-                }
+                } else break
 
                 if(wasOverlaped?.is) break
             }
@@ -388,7 +385,6 @@ module.exports = function(app, upload) {
 
                         if(field.item.length) {
                             let data = item[`${field.item[0].name}`]
-
                             await coreTypeOfField.update({
                                 value: data,
                             },{
@@ -432,15 +428,21 @@ module.exports = function(app, upload) {
             }
         }
 
-        let parent = false, 
-            child = false
+        let parent = {}, 
+            child = {}
 
         console.log()
-        console.log('start create realtions')
+        console.log('start create relations')
+
+        // t - иттератор prepareRelations (подготовленных данных - строки Excel)
+        // r - иттератор prepareRelations элемента (подготовленных данных - поля сущностей)
+        // g - иттератор relations (глобальные отношения)
 
         for(let g = 0, t = 0, r = 0; ; ) {
             let pr = prepareRelations[t]
             let relation = relations[g]
+
+            if(prepareRelations.length === 0 || relations.length === 0) break
         
             if(relation.parentCoreId === pr[r]?.idCore) {
                 parent = pr[r]
@@ -454,16 +456,17 @@ module.exports = function(app, upload) {
                 continue
             }
 
-            if(parent && child) {
+            if(Object.keys(parent).length && Object.keys(child).length) {
                 await core2core.create({
                     parentCoreId: parent.newTheCore.idTheCore,
                     childCoreId: child.newTheCore.idTheCore,
                 })
 
-                parent = false
-                child = false
+                parent = {}
+                child = {}
 
                 t++
+                r = 0
             }
 
             r++
@@ -477,6 +480,8 @@ module.exports = function(app, upload) {
             if(g >= relations.length) {
                 break
             }
+
+            console.log('relation created')
         }
 
         console.log()
