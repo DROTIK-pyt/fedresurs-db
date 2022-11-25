@@ -238,14 +238,19 @@ module.exports = function(app, upload) {
             }
         })
 
-        const theCores = await theCore.findOne({
-            where: {
-                idTheCore: item.childCoreId,
-            },
-            include: core
-        })
+        let theCores
+        if(item) {
+            theCores = await theCore.findOne({
+                where: {
+                    idTheCore: item.childCoreId,
+                },
+                include: core
+            })
 
-        res.json({ok: true, cores: theCores.cores})
+            res.json({ok: true, cores: theCores.cores})
+        } else {
+            res.json({ok: false})
+        }
     })
 
     app.post('/getHeadFieldsExcel', upload.single('xlxsFile'), async (req, res) => {
@@ -315,7 +320,7 @@ module.exports = function(app, upload) {
     })
 
     app.post('/uploadToBase', async(req, res) => {
-        const { uniqueSuffix, file2field, relations, cond } = req.body
+        const { uniqueSuffix, file2field, relations } = req.body
 
         const readFile = cache.find(c => c.id === uniqueSuffix).readFile[0]
 
@@ -323,11 +328,50 @@ module.exports = function(app, upload) {
 
         let prepareRelations = []
         let newTheCore
-        let wasOverlaped = false
+        let wasOverlaped
 
         for(let i = 0; i < readFile.length; i++) {
+            wasOverlaped = false
             let item = readFile[i]
             prepareRelations[i] = []
+
+            for(let g = 0; g < file2field.length; g++) {
+                let f2f = file2field[g]
+
+                if(f2f?.uniqueField) {
+                    for(let k = 0; k < f2f.fields.length; k++) {
+                        let field = f2f.fields[k]
+
+                        if(field.item.length) {
+                            let data = item[`${field.item[0].name}`]
+                            let baseField = await typeOfField.findOne({
+                                where: {
+                                    idTypeOfField: f2f.uniqueField
+                                },
+                                include: coreTypeOfField
+                            })
+
+                            if(!wasOverlaped?.is) {
+                                for(let h = 0; h < baseField.coreTypeOfFields.length; h++) {
+                                    let value = baseField.coreTypeOfFields[h]
+
+                                    if(value.value === data) {
+                                        wasOverlaped = {
+                                            is: true,
+                                            theCoreIdTheCore: value.theCoreIdTheCore
+                                        }
+                                        break
+                                    }
+                                }
+                            }
+                        }
+
+                        if(wasOverlaped?.is) break
+                    }
+                }
+
+                if(wasOverlaped?.is) break
+            }
 
             for(let g = 0; g < file2field.length; g++) {
                 let f2f = file2field[g]
@@ -338,26 +382,30 @@ module.exports = function(app, upload) {
                     }
                 })
 
-                // Проверить наличие совпадений полей сущности и предпринять меры
+                if(wasOverlaped?.is) {
+                    for(let k = 0; k < f2f.fields.length; k++) {
+                        let field = f2f.fields[k]
 
-                // for(let k = 0; k < f2f.fields.length; k++) {
-                //     let field = f2f.fields[k]
+                        if(field.item.length) {
+                            let data = item[`${field.item[0].name}`]
 
-                //     if(field.item.length) {
-                //         let data = item[`${field.item[0].name}`]
-                //         let baseField = await typeOfField.findOne({
-                //             where: {
-                //                 idTypeOfField: field.idTypeOfField
-                //             }
-                //         })
+                            await coreTypeOfField.update({
+                                value: data,
+                            },{
+                                where: {
+                                    [Op.and]: [
+                                        {
+                                            theCoreIdTheCore: wasOverlaped.theCoreIdTheCore,
+                                            typeOfFieldIdTypeOfField: field.idTypeOfField
+                                        }
+                                    ]
+                                }
+                            })
+                        }
+                    }
+                }
 
-                //         const overlap = 
-                //     }
-                // }
-
-                // if(wasOverlaped) {
-                //     continue
-                // }
+                if(wasOverlaped?.is) continue
 
                 newTheCore = await theCore.create()
 
@@ -402,6 +450,11 @@ module.exports = function(app, upload) {
             if (relation.childCoreId === pr[r]?.idCore) {
                 child = pr[r]
 
+                r++
+                continue
+            }
+
+            if(parent && child) {
                 await core2core.create({
                     parentCoreId: parent.newTheCore.idTheCore,
                     childCoreId: child.newTheCore.idTheCore,
@@ -409,23 +462,19 @@ module.exports = function(app, upload) {
 
                 parent = false
                 child = false
-                g = 0
-                r++
-                continue
-            }
-        
-            g++
-            r++
-            if(g >= relations.length) {
-                g = 0
-            }
-            if(r >= pr.length) {
-                parent = false
-                child = false
+
                 t++
+            }
+
+            r++
+            if(r >= pr.length) {
                 r = 0
             }
             if(t >= prepareRelations.length) {
+                t = 0
+                g++
+            }
+            if(g >= relations.length) {
                 break
             }
         }

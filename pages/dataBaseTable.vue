@@ -125,7 +125,11 @@ export default {
 
             entities.theCores.forEach(entity => {
                 entity.typeOfFields.forEach(field => {
-                    elem[`${field.tag}`] = field.coreTypeOfField.value
+                    if(field.coreTypeOfField.value) {
+                        elem[`${field.tag}`] = field.coreTypeOfField.value
+                    } else {
+                        elem[`${field.tag}`] = "Нет данных"
+                    }
                 })
                 elem['idEntity'] = entity.idTheCore
                 this.entities.push(elem)

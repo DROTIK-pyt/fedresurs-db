@@ -83,7 +83,9 @@ export default {
         text() {
             let result = ``
             this.theEntity.typeOfFields.forEach(field => {
-                result += `${field.name}: ${field.coreTypeOfField.value} <br />`
+                if(field.coreTypeOfField.value) {
+                    result += `${field.name}: ${field.coreTypeOfField.value} <br />`
+                }
             })
             return result
         },
@@ -112,7 +114,9 @@ export default {
             const result = await data.json()
 
             result.fields.typeOfFields.forEach(field => {
-                this.information += `${field.name}: ${field.coreTypeOfField.value}<br />`
+                if(field.coreTypeOfField.value) {
+                    this.information += `${field.name}: ${field.coreTypeOfField.value}<br />`
+                }
             })
         },
     },

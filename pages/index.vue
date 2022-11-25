@@ -175,6 +175,20 @@
                                     </transition-group>
                                 </draggable>
                                 </v-col>
+                                <v-col
+                                    cols="12"
+                                    sm="3"
+                                >
+                                    <h4 class="mb-1 bordered px-1">Уникальное поле</h4>
+                                    <v-select
+                                    :items="uniqueFields"
+                                    label="поле.."
+                                    outlined
+                                    item-value="idTypeOfField"
+                                    item-text="name"
+                                    v-model="core.uniqueField"
+                                    ></v-select>
+                                </v-col>
                             </v-row>
                         </v-col>
                     </v-tab-item>
@@ -233,6 +247,7 @@
             </v-col>
         </v-row>
         </v-col>
+        {{ fieldsSystem }}
     </v-row>
 </template>
 
@@ -262,6 +277,7 @@ export default {
         loading2base: false,
 
         // Подготовить вывод действий на случай совпадения полей сущности
+        uniqueFields: [],
 
         // conditionWithRepeat: [
         //     {
@@ -351,7 +367,14 @@ export default {
                 })
             }
 
-            console.log(this.fieldsSystem)
+            this.fieldsSystem.forEach(uf => {
+                uf.fields.forEach(field => {
+                    this.uniqueFields.push({
+                        name: field.name,
+                        idTypeOfField: field.idTypeOfField
+                    })
+                })
+            })
         },
         async uploadToBase() {
             this.loading2base = true
