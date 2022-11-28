@@ -1,9 +1,29 @@
 const { core, core2core, typeOfField, theCore, coreTypeOfField, Op } = require('../db/scheme')
 const CyrillicToTranslit = require('cyrillic-to-translit-js')
 const parser = require('simple-excel-to-json')
+const { transformNumberInfinityArgument } = require('@redis/client/dist/lib/commands/generic-transformers')
 const cyrillicToTranslit = new CyrillicToTranslit()
 
 const cache = []
+
+function ExcelDateToJSDate(serial) {
+    let utc_days  = Math.floor(serial - 25569);
+    let utc_value = utc_days * 86400;                                        
+    let date_info = new Date(utc_value * 1000);
+ 
+    let fractional_day = serial - Math.floor(serial) + 0.0000001;
+ 
+    let total_seconds = Math.floor(86400 * fractional_day);
+ 
+    let seconds = total_seconds % 60;
+ 
+    total_seconds -= seconds;
+ 
+    let hours = Math.floor(total_seconds / (60 * 60));
+    let minutes = Math.floor(total_seconds / 60) % 60;
+ 
+    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+ }
 
 module.exports = function(app, upload) {
     app.post('/field', async (req, res) => {
@@ -302,178 +322,106 @@ module.exports = function(app, upload) {
 
     app.post('/uploadToBase', async(req, res) => {
         const { uniqueSuffix, file2field, relations } = req.body
+        let prepareRelations = []
+        let aCore
+        let newTheCore
 
         const readFile = cache.find(c => c.id === uniqueSuffix).readFile[0]
 
+        console.log()
         console.log('start upload..')
-
-        let prepareRelations = []
-        let newTheCore
-        let wasOverlaped
+        console.log()
 
         for(let i = 0; i < readFile.length; i++) {
-            wasOverlaped = {}
-            let item = readFile[i]
+            let fileItem = readFile[i]
             prepareRelations[i] = []
 
             for(let g = 0; g < file2field.length; g++) {
                 let f2f = file2field[g]
 
-                if(f2f?.uniqueField) {
-                    for(let k = 0; k < f2f.fields.length; k++) {
-                        let field = f2f.fields[k]
+                // Проверка заполнены ли поля в file2field items
+                for(let j = 0; j < f2f.fields.length; j++) {
+                    let field = f2f.fields[j]
 
-                        if(field.item.length > 0) {
-                            let data = item[`${field.item[0].name}`]
-                            let baseField = await typeOfField.findOne({
-                                where: {
-                                    idTypeOfField: f2f.uniqueField
-                                },
-                                include: {
-                                    model: coreTypeOfField,
-                                    where: {
-                                        value: data
-                                    }
-                                }
-                            })
-
-                            if(baseField) {
-                                wasOverlaped.is = true
-                                wasOverlaped.theCoreIdTheCore = baseField.coreTypeOfFields[0].theCoreIdTheCore
-                                break
-                            }
-                        }
-
-                        if(wasOverlaped?.is) break
-                    }
-                } else break
-
-                if(wasOverlaped?.is) break
-            }
-
-            for(let g = 0; g < file2field.length; g++) {
-                let f2f = file2field[g]
-
-                let aCore = await core.findOne({
-                    where: {
-                        idCore: f2f.idCore
-                    }
-                })
-
-                if(wasOverlaped?.is) {
-                    for(let k = 0; k < f2f.fields.length; k++) {
-                        let field = f2f.fields[k]
-
-                        if(field.item.length > 0) {
-                            let data = item[`${field.item[0].name}`]
-                            await coreTypeOfField.update({
-                                value: data,
-                            },{
-                                where: {
-                                    [Op.and]: [
-                                        {
-                                            theCoreIdTheCore: wasOverlaped.theCoreIdTheCore,
-                                            typeOfFieldIdTypeOfField: field.idTypeOfField
-                                        }
-                                    ]
-                                }
-                            })
-                        }
-                    }
-                }
-
-                if(wasOverlaped?.is) continue
-
-                newTheCore = await theCore.create()
-
-                await aCore.addTheCore(newTheCore)
-
-                for(let k = 0; k < f2f.fields.length; k++) {
-                    let field = f2f.fields[k]
-
-                    if(field.item.length > 0) {
-                        let data = item[`${field.item[0].name}`]
-                        let baseField = await typeOfField.findOne({
+                    if(field.item.length) {
+                        aCore = await core.findOne({
                             where: {
-                                idTypeOfField: field.idTypeOfField
+                                idCore: f2f.idCore
                             }
                         })
-                        await newTheCore.addTypeOfField(baseField, { through: { value: data } })
+                        newTheCore = await theCore.create()
+                        await aCore.addTheCore(newTheCore)
+                        prepareRelations[i].push({
+                            idCore: f2f.idCore,
+                            newTheCore
+                        })
+                        break
                     }
                 }
 
-                prepareRelations[i].push({
-                    idCore: f2f.idCore,
-                    newTheCore,
-                })
+                // Если newTheCore было создано (тоесть были заполнены поля),
+                // тогда записываем данные по полям
+                if(newTheCore) {
+                    for(let j = 0; j < f2f.fields.length; j++) {
+                        let field = f2f.fields[j]
+
+                        if(field.item.length) {
+                            let data = fileItem[`${field.item[0].name}`]
+                            let TOF = await typeOfField.findOne({
+                                where: {
+                                    idTypeOfField: field.idTypeOfField
+                                }
+                            })
+                            await newTheCore.addTypeOfField(TOF, { through: { value: data } })
+                        }
+                    }
+
+                    newTheCore = null
+                }
             }
         }
 
-        let parent = {}, 
-            child = {}
+        // Привязка сущностей в соответствии со схемой relations
+        for(let i = 0; i < relations.length; i++) {
+            let relation = relations[i]
+            let parent = false
+            let child = false
 
-        console.log()
-        console.log('start create relations')
+            for(let j = 0; j < prepareRelations.length; j++) {
+                let pr = prepareRelations[j]
 
-        // t - иттератор prepareRelations (подготовленных данных - строки Excel)
-        // r - иттератор prepareRelations элемента (подготовленных данных - поля сущностей)
-        // g - иттератор relations (глобальные отношения)
+                if(pr.length) {
+                    for(let h = 0; h < pr.length; h++) {
+                        if(relation.parentCoreId === pr[h].idCore) {
+                            parent = pr[h]
+                            break
+                        }
+                    }
+                    for(let h = 0; h < pr.length; h++) {
+                        if(relation.childCoreId === pr[h].idCore) {
+                            child = pr[h]
+                            break
+                        }
+                    }
 
-        // res.json(prepareRelations)
-
-        for(let g = 0, t = 0, r = 0; ; ) {
-            let pr = prepareRelations[t]
-            let relation = relations[g]
-        
-            if(pr?.length) {
-                if(relation.parentCoreId === pr[r]?.idCore) {
-                    parent = pr[r]
-                    r++
-                    continue
+                    if(Object.keys(parent).length &&
+                       Object.keys(child).length) 
+                    {
+                        await core2core.create({
+                            parentCoreId: parent.newTheCore.idTheCore,
+                            childCoreId: child.newTheCore.idTheCore,
+                        })
+                    }
+                    parent = false
+                    child = false
                 }
-                if (relation.childCoreId === pr[r]?.idCore) {
-                    child = pr[r]
-
-                    r++
-                    continue
-                }
-            } else {
-                t++
             }
-
-            if(Object.keys(parent).length && Object.keys(child).length) {
-                await core2core.create({
-                    parentCoreId: parent.newTheCore.idTheCore,
-                    childCoreId: child.newTheCore.idTheCore,
-                })
-
-                parent = {}
-                child = {}
-
-                t++
-                r = 0
-                continue
-            }
-
-            r++
-            if(r >= pr.length) {
-                r = 0
-                t++
-            }
-            if(t >= prepareRelations.length) {
-                t = 0
-                g++
-            }
-            if(g >= relations.length) {
-                break
-            }
-
-            console.log('relation created')
         }
 
         console.log()
         console.log('success')
+        console.log()
 
-        res.json({ok:true})
+        res.json(true)
     })
 }
