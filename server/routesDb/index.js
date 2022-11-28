@@ -5,25 +5,6 @@ const cyrillicToTranslit = new CyrillicToTranslit()
 
 const cache = []
 
-function ExcelDateToJSDate(serial) {
-    let utc_days  = Math.floor(serial - 25569);
-    let utc_value = utc_days * 86400;                                        
-    let date_info = new Date(utc_value * 1000);
- 
-    let fractional_day = serial - Math.floor(serial) + 0.0000001;
- 
-    let total_seconds = Math.floor(86400 * fractional_day);
- 
-    let seconds = total_seconds % 60;
- 
-    total_seconds -= seconds;
- 
-    let hours = Math.floor(total_seconds / (60 * 60));
-    let minutes = Math.floor(total_seconds / 60) % 60;
- 
-    return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
- }
-
 module.exports = function(app, upload) {
     app.post('/field', async (req, res) => {
         const { idEntity } = req.body
@@ -342,7 +323,7 @@ module.exports = function(app, upload) {
                     for(let k = 0; k < f2f.fields.length; k++) {
                         let field = f2f.fields[k]
 
-                        if(field.item.length) {
+                        if(field.item.length > 0) {
                             let data = item[`${field.item[0].name}`]
                             let baseField = await typeOfField.findOne({
                                 where: {
@@ -383,7 +364,7 @@ module.exports = function(app, upload) {
                     for(let k = 0; k < f2f.fields.length; k++) {
                         let field = f2f.fields[k]
 
-                        if(field.item.length) {
+                        if(field.item.length > 0) {
                             let data = item[`${field.item[0].name}`]
                             await coreTypeOfField.update({
                                 value: data,
@@ -410,7 +391,7 @@ module.exports = function(app, upload) {
                 for(let k = 0; k < f2f.fields.length; k++) {
                     let field = f2f.fields[k]
 
-                    if(field.item.length) {
+                    if(field.item.length > 0) {
                         let data = item[`${field.item[0].name}`]
                         let baseField = await typeOfField.findOne({
                             where: {
@@ -438,22 +419,26 @@ module.exports = function(app, upload) {
         // r - иттератор prepareRelations элемента (подготовленных данных - поля сущностей)
         // g - иттератор relations (глобальные отношения)
 
+        // res.json(prepareRelations)
+
         for(let g = 0, t = 0, r = 0; ; ) {
             let pr = prepareRelations[t]
             let relation = relations[g]
-
-            if(prepareRelations.length === 0 || relations.length === 0) break
         
-            if(relation.parentCoreId === pr[r]?.idCore) {
-                parent = pr[r]
-                r++
-                continue
-            }
-            if (relation.childCoreId === pr[r]?.idCore) {
-                child = pr[r]
+            if(pr?.length) {
+                if(relation.parentCoreId === pr[r]?.idCore) {
+                    parent = pr[r]
+                    r++
+                    continue
+                }
+                if (relation.childCoreId === pr[r]?.idCore) {
+                    child = pr[r]
 
-                r++
-                continue
+                    r++
+                    continue
+                }
+            } else {
+                t++
             }
 
             if(Object.keys(parent).length && Object.keys(child).length) {
@@ -467,11 +452,13 @@ module.exports = function(app, upload) {
 
                 t++
                 r = 0
+                continue
             }
 
             r++
             if(r >= pr.length) {
                 r = 0
+                t++
             }
             if(t >= prepareRelations.length) {
                 t = 0
