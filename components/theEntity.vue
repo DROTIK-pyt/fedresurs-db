@@ -3,6 +3,7 @@
         <v-dialog
             v-model="isOpen"
             width="500"
+            @click:outside="$emit('closeView')"
             >
             <v-card>
                 <v-card-title class="text-h5 grey lighten-2">

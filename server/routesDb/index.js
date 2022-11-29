@@ -529,6 +529,6 @@ module.exports = function(app, upload) {
         console.log('success')
         console.log()
 
-        res.json(true)
+        res.json({ok: true})
     })
 }

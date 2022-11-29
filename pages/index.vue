@@ -277,7 +277,6 @@
             </v-col>
         </v-row>
         </v-col>
-        {{ fieldsSystem }}
     </v-row>
 </template>
 
