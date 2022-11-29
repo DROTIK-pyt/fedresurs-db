@@ -386,7 +386,8 @@ export default {
                     this.fieldsSystem.push({
                         idCore: core.idCore,
                         name: core.name,
-                        fields: []
+                        fields: [],
+                        action: "skip"
                     })
                     result.fieldsValues.forEach(field => {
                         this.fieldsSystem[index].fields.push({
