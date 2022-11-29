@@ -6,6 +6,12 @@ const cyrillicToTranslit = new CyrillicToTranslit()
 
 const cache = []
 
+const actions = {
+    skip: "skip",
+    update: "update",
+    supplement: "supplement"
+}
+
 function ExcelDateToJSDate(serial) {
     let utc_days  = Math.floor(serial - 25569);
     let utc_value = utc_days * 86400;                                        
@@ -328,55 +334,156 @@ module.exports = function(app, upload) {
 
         const readFile = cache.find(c => c.id === uniqueSuffix).readFile[0]
 
+        // res.json(readFile)
+
         console.log()
         console.log('start upload..')
         console.log()
+
+        let wasOverlaped = []
+
+        for(let i = 0; i < readFile.length; i++) {
+            let fileItem = readFile[i]
+            prepareRelations[i] = []
+            wasOverlaped[i] = []
+
+            // Проверка на совпадения
+            for(let g = 0; g < file2field.length; g++) {
+                let f2f = file2field[g]
+
+                for(let j = 0; j < f2f.fields.length; j++) {
+                    let field = f2f.fields[j]
+
+                    if(field.item.length && f2f.uniqueField === field.idTypeOfField) {
+                        let data = fileItem[`${field.item[0].name}`]
+                        let baseField = await coreTypeOfField.findOne({
+                            where: {
+                                value: data,
+                            },
+                            include: {
+                                model: typeOfField,
+                                where: {
+                                    idTypeOfField: f2f.uniqueField
+                                }
+                            }
+                        })
+                        // console.log({field, item: field.item, name: field.item[0].name, value: data})
+                        // console.log({baseField: baseField?.toJSON()})
+                        if(baseField) {
+                            wasOverlaped[i].push(baseField.theCoreIdTheCore)
+                        }
+                    }
+                }
+            }
+        }
+        // res.send()
+        // res.json(wasOverlaped)
+        // return
 
         for(let i = 0; i < readFile.length; i++) {
             let fileItem = readFile[i]
             prepareRelations[i] = []
 
-            for(let g = 0; g < file2field.length; g++) {
-                let f2f = file2field[g]
+            if(wasOverlaped[i].length) {
+                for(let w = 0; w < wasOverlaped[i].length; w++) {
+                    let theCoreIdTheCore = wasOverlaped[i][w]
+                    
+                    for(let g = 0; g < file2field.length; g++) {
+                        let f2f = file2field[g]
+                    
+                        for(let j = 0; j < f2f.fields.length; j++) {
+                            let field = f2f.fields[j]
 
-                // Проверка заполнены ли поля в file2field items
-                for(let j = 0; j < f2f.fields.length; j++) {
-                    let field = f2f.fields[j]
+                            if(field.item.length) {
+                                let data = fileItem[`${field.item[0].name}`]
 
-                    if(field.item.length) {
-                        aCore = await core.findOne({
-                            where: {
-                                idCore: f2f.idCore
+                                if(f2f.action === actions.update) {
+                                    await coreTypeOfField.update({
+                                        value: data
+                                    }, {
+                                        where: {
+                                            theCoreIdTheCore,
+                                            typeOfFieldIdTypeOfField: field.idTypeOfField
+                                        }
+                                    })
+                                    // console.log({theCoreIdTheCore,
+                                    //     typeOfFieldIdTypeOfField: field.idTypeOfField,
+                                    //     data})
+                                }
+                                if(f2f.action === actions.supplement) {
+                                    if(f2f.supplementFields.indexOf(field.idTypeOfField) > -1) {
+                                        let toSupplement = await coreTypeOfField.findOne({
+                                            where: {
+                                                theCoreIdTheCore,
+                                                typeOfFieldIdTypeOfField: field.idTypeOfField
+                                            }
+                                        })
+                                        if(toSupplement) {
+                                            // res.json(toSupplement.toJSON())
+                                            // return
+                                            let value = toSupplement.value
+                                            value += `\n${data}`
+                                            await coreTypeOfField.update({
+                                                value
+                                            }, {
+                                                where: {
+                                                    theCoreIdTheCore,
+                                                    typeOfFieldIdTypeOfField: field.idTypeOfField
+                                                }
+                                            })
+                                        }
+                                    }
+                                }
+                                if(f2f.action === actions.skip) {
+                                    continue
+                                }
                             }
-                        })
-                        newTheCore = await theCore.create()
-                        await aCore.addTheCore(newTheCore)
-                        prepareRelations[i].push({
-                            idCore: f2f.idCore,
-                            newTheCore
-                        })
-                        break
+                        }
                     }
                 }
+            } else {
+                for(let g = 0; g < file2field.length; g++) {
+                    let f2f = file2field[g]
 
-                // Если newTheCore было создано (тоесть были заполнены поля),
-                // тогда записываем данные по полям
-                if(newTheCore) {
+                    // Проверка заполнены ли поля в file2field items
                     for(let j = 0; j < f2f.fields.length; j++) {
                         let field = f2f.fields[j]
 
                         if(field.item.length) {
-                            let data = fileItem[`${field.item[0].name}`]
-                            let TOF = await typeOfField.findOne({
+                            aCore = await core.findOne({
                                 where: {
-                                    idTypeOfField: field.idTypeOfField
+                                    idCore: f2f.idCore
                                 }
                             })
-                            await newTheCore.addTypeOfField(TOF, { through: { value: data } })
+                            newTheCore = await theCore.create()
+                            await aCore.addTheCore(newTheCore)
+                            prepareRelations[i].push({
+                                idCore: f2f.idCore,
+                                newTheCore
+                            })
+                            break
                         }
                     }
 
-                    newTheCore = null
+                    // Если newTheCore было создано (тоесть были заполнены поля),
+                    // тогда записываем данные по полям
+                    if(newTheCore) {
+                        for(let j = 0; j < f2f.fields.length; j++) {
+                            let field = f2f.fields[j]
+
+                            if(field.item.length) {
+                                let data = fileItem[`${field.item[0].name}`]
+                                let TOF = await typeOfField.findOne({
+                                    where: {
+                                        idTypeOfField: field.idTypeOfField
+                                    }
+                                })
+                                await newTheCore.addTypeOfField(TOF, { through: { value: data } })
+                            }
+                        }
+
+                        newTheCore = null
+                    }
                 }
             }
         }

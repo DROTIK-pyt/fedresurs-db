@@ -189,6 +189,36 @@
                                     v-model="core.uniqueField"
                                     ></v-select>
                                 </v-col>
+                                <v-col
+                                    cols="12"
+                                    sm="3"
+                                >
+                                    <h4 class="mb-1 bordered px-1">Действие</h4>
+                                    <v-select
+                                    :items="whatDoWeDo"
+                                    label="Действие"
+                                    outlined
+                                    item-value="action"
+                                    item-text="text"
+                                    v-model="core.action"
+                                    ></v-select>
+                                </v-col>
+                                <v-col
+                                    cols="12"
+                                    sm="3"
+                                    v-if="core.action === `supplement`"
+                                >
+                                    <h4 class="mb-1 bordered px-1">Куда дополнять</h4>
+                                    <v-select
+                                    :items="uniqueFields"
+                                    label="Куда..."
+                                    outlined
+                                    item-value="idTypeOfField"
+                                    item-text="name"
+                                    multiple
+                                    v-model="core.supplementFields"
+                                    ></v-select>
+                                </v-col>
                             </v-row>
                         </v-col>
                     </v-tab-item>
@@ -277,19 +307,21 @@ export default {
         loading2base: false,
 
         // Подготовить вывод действий на случай совпадения полей сущности
+        whatDoWeDo: [
+            {
+                text: "Обновить",
+                action: "update"
+            },
+            {
+                text: "Пропустить",
+                action: "skip"
+            },
+            {
+                text: "Дополнить",
+                action: "supplement"
+            },
+        ],
         uniqueFields: [],
-
-        // conditionWithRepeat: [
-        //     {
-        //         name: "Пропустить",
-        //         tag: "skip"
-        //     },
-        //     {
-        //         name: "Обновить",
-        //         tag: "update"
-        //     },
-        // ],
-        // cond: "",
 
         tabs: null,
 
@@ -443,7 +475,7 @@ export default {
 
                 this.loadingData = false
 
-                console.log(this.list)
+                // console.log(this.list)
             } else {
                 this.list = []
                 this.fieldsSystem = []
