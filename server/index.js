@@ -5,7 +5,7 @@ const express = require("express")
 const cors = require('cors')
 const multer  = require('multer')
 const path = require('path')
-// const json2xls = require('json2xls')
+const json2xls = require('json2xls')
 // const jwt = require('jsonwebtoken')
 // const signature = "FJWr"
 // const base64 = require('base-64')
@@ -29,7 +29,7 @@ const app = express()
 app.use(cors())
 app.use(express.json({ limit: '500kb', parameterLimit: 10000 })) // for parsing application/json
 app.use(express.urlencoded({ extended: true, limit: '500kb', parameterLimit: 10000 }))
-// app.use(json2xls.middleware)
+app.use(json2xls.middleware)
 
 app.use(express.static('static'))
 

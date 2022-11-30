@@ -1,8 +1,10 @@
 const { core, core2core, typeOfField, theCore, coreTypeOfField, Op } = require('../db/scheme')
 const CyrillicToTranslit = require('cyrillic-to-translit-js')
 const parser = require('simple-excel-to-json')
-const { transformNumberInfinityArgument } = require('@redis/client/dist/lib/commands/generic-transformers')
 const cyrillicToTranslit = new CyrillicToTranslit()
+const json2xls = require('json2xls')
+const fs = require('fs')
+const path = require('path')
 
 const cache = []
 
@@ -286,6 +288,77 @@ module.exports = function(app, upload) {
         res.json({ok: true, fieldsValues})
     })
 
+    app.get('/fieldsValuesExport', async (req, res) => {
+        const cores = await core.findAll({
+            include: {
+                model: theCore,
+                include: {
+                    model: typeOfField
+                }
+            }
+        })
+
+        let fieldsValues = []
+
+        for(let i = 0; i < cores.length; i++) {
+            let core = cores[i]
+            fieldsValues.push({
+                idCore: core.idCore,
+                fields: [],
+            })
+
+            for(let j = 0; j < core.theCores.length; j++) {
+                let aTheCore = core.theCores[j]
+
+                for(let k = 0; k < aTheCore.typeOfFields.length; k++) {
+                    let field = aTheCore.typeOfFields[k]
+
+                    fieldsValues[i].fields.push({
+                        idTypeOfField: field.idTypeOfField,
+                        name: field.name
+                    })
+                }
+            }
+        }
+
+        let result = []
+        let uniq = []
+
+        for(let i = 0; i < fieldsValues.length; i++) {
+            let fields = fieldsValues[i].fields
+            uniq[i] = []
+            result[i] = []
+
+            for(let j = 0; j < fields.length; j++) {
+                let field = fields[j]
+
+                if(uniq[i].indexOf(field.idTypeOfField) === -1) {
+                    uniq[i].push(field.idTypeOfField)
+                }
+            }
+        }
+
+        for(let i = 0; i < fieldsValues.length; i++) {
+            let fields = fieldsValues[i].fields
+
+            for(let j = 0; j < fields.length; j++) {
+                let field = fields[j]
+
+                for(let u = 0; u < uniq[i].length; u++) {
+                    let index = uniq[i].indexOf(field.idTypeOfField)
+
+                    if(index > -1) {
+                        result[i].push(field)
+                        uniq[i] = uniq[i].filter(elem => elem != field.idTypeOfField)
+                        break
+                    }
+                }
+            }
+        }
+
+        res.json({ok: true, fieldsValues: result})
+    })
+
     app.get('/cores', async (req, res) => {
         const cores = await core.findAll()
 
@@ -530,5 +603,187 @@ module.exports = function(app, upload) {
         console.log()
 
         res.json({ok: true})
+    })
+
+    app.post('/exportToExcel', async (req, res) => {
+        const { cores } = req.body
+
+        let isSplited = true
+        let cnt = 0
+        cores.forEach(aCore => {
+            cnt += aCore?.exportField?.length
+        })
+        if(cnt > 1) {
+            isSplited = false
+        }
+
+        let fieldsAndValue = []
+        let allData = {}
+
+        for(let i = 0; i < cores.length; i++) {
+            let aCore = cores[i]
+            allData[`${aCore.name}`] = []
+
+            for(let g = 0; g < aCore?.exportField?.length; g++) {
+                let idExportField = aCore.exportField[g]
+
+                let data = await coreTypeOfField.findAll({
+                    where: {
+                        typeOfFieldIdTypeOfField: idExportField,
+                    },
+                    include: [{
+                        model: theCore,
+                        include: {
+                            model: core,
+                            where: {
+                                idCore: aCore.idCore
+                            }
+                        }
+                    }, {
+                        model: typeOfField
+                    }],
+                })
+
+                allData[`${aCore.name}`].push(data)
+            }
+        }
+
+        // res.json(allData)
+        // return
+
+        let rows = []
+        
+        for(let i = 0; i < Object.values(allData).length; i++) {
+            let data = allData[Object.keys(allData)[i]]
+            rows[i] = []
+
+            for(let g = 0; g < data.length; g++) {
+                let row = {}
+                rows[i][g] = []
+
+                for(let k = 0; k < data[g].length; k++) {
+                    if(data[g][k]?.theCore) {
+                        row = {}
+                        row[`${Object.keys(allData)[i]}:${data[g][k].typeOfField.name}`] = []
+                        row[`${Object.keys(allData)[i]}:${data[g][k].typeOfField.name}`] = data[g][k].value
+                        rows[i][g].push(row)
+                    }
+                }
+            }
+        }
+
+        // res.json(rows)
+        // return
+
+        let itteratorsData = 0
+        let itteratorsCors = 0
+        let iData = 0
+        let FAVS = []
+        rows = rows.filter(row => row.length)
+
+        // res.json(rows[0][0][0]) // rows[сущность][поле][значение]
+        // return
+
+        while(true) {
+
+            let FAV = {}
+            let headElem = rows[itteratorsCors][itteratorsData][iData]
+            // console.log({itteratorsCors, itteratorsData, iData})
+
+            // res.json(headElem)
+            // return
+
+            FAV[`${Object.keys(headElem)[0]}`] = Object.values(headElem)[0]
+            FAVS.push(FAV)
+
+            iData++
+            if(iData >= rows[0][0].length) {
+                iData = 0
+                itteratorsData++
+
+                if(itteratorsData >= rows[itteratorsCors]?.length) {
+                    itteratorsCors++
+                    itteratorsData = 0
+
+                    if(itteratorsCors >= rows.length) {
+                        // res.json(FAVS)
+                        // return
+                        if(isSplited) {
+                            FAVS.forEach(fav => {
+                                let t = {}
+                                let s = Object.values(fav)[0].split('\r\n')
+
+                                s.forEach(elem => {
+                                    if(elem) {
+                                        t[`${Object.keys(fav)[0]}`] = elem
+                                        fieldsAndValue.push(t)
+                                    }
+                                })
+                            })
+                        } else {
+                            FAVS.forEach(fav => {
+                                let t = {}
+
+                                t[`${Object.keys(fav)[0]}`] = Object.values(fav)[0]
+                                fieldsAndValue.push(t)
+                            })
+                        }
+
+                        break
+                    }
+                }
+            }
+        }
+
+        let result = []
+
+        let itterators = Array(Math.floor(fieldsAndValue.length / rows[0][0].length)).fill(0)
+
+        for(let i = 0; i < itterators.length; i++) {
+            itterators[i] += i * rows[0][0].length
+        }
+
+        let iterat = 0
+        let t = {}
+
+        while(true) {
+
+            let i = itterators[iterat]
+
+            let elem = fieldsAndValue[i]
+            t[`${Object.keys(elem)[0]}`] = Object.values(elem)[0]
+
+            iterat++
+            if(iterat >= itterators.length) {
+                iterat = 0
+                for(let h = 0; h < itterators.length; h++) {
+                    itterators[h]++
+                }
+
+                result.push(t)
+                t = {}
+            }
+            if(itterators[itterators.length - 1] >= fieldsAndValue.length) break
+        }
+
+        res.xls('data.xlsx', result)
+        // res.json(result)
+    })
+
+    app.post('/test', async (req, res) => {
+        var jsonArr = [{
+            "foo:foo": 'bar',
+            "qux:foo": 'moo',
+            "poo:foo": 123,
+            "stux:foo": new Date()
+        },
+        {
+            "foo:foo": 'bar',
+            "qux:foo": 'moo',
+            "poo:foo": 345,
+            "stux:foo": new Date()
+        }];
+
+        res.xls('data.xlsx', jsonArr)
     })
 }

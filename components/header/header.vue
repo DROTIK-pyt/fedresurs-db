@@ -14,6 +14,15 @@
                         Импорт
                     </v-btn>
                 </nuxt-link>
+                <nuxt-link to="/export" active-class="active-btn">
+                    <v-btn
+                    depressed
+                    dark
+                    color="purple"
+                    >
+                        Экспорт
+                    </v-btn>
+                </nuxt-link>
                 <nuxt-link to="/dataBaseTable" active-class="active-btn">
                     <v-btn
                     depressed
