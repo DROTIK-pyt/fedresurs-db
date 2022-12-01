@@ -69,6 +69,11 @@ const typeOfField = sequelize.define('typeOfField', {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: true,
+  },
+  showInFilter: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
   }
 })
 

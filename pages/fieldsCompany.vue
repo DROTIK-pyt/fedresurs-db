@@ -68,18 +68,24 @@
                     sm="10"
                     
                     >
-                        <div class="d-flex justify-space-between">
+                        <div class="d-flex justify-space-between align-end">
                             <v-text-field
                                 v-model="fieldsOfCompony.name"
-                                label="Наименование поля компании"
+                                label="Наименование поля"
                                 outlined
                                 :error-messages="errorChanged"
                                 class="mr-5"
                             ></v-text-field>
-                            <v-switch
-                                v-model="fieldsOfCompony.showInColumnTable"
-                                label="Видимость колонки"
-                            ></v-switch>
+                            <div>
+                                <v-switch
+                                    v-model="fieldsOfCompony.showInColumnTable"
+                                    label="Видимость колонки"
+                                ></v-switch>
+                                <v-switch
+                                    v-model="fieldsOfCompony.showInFilter"
+                                    label="Использовать в фильтре"
+                                ></v-switch>
+                            </div>
                         </div>
                     </v-col>
                     <v-col
@@ -122,6 +128,8 @@ export default {
         errorChanged: "",
         toDelete: false,
         loading: true,
+
+        disabledBtnSave: true,
     }),
     components: {},
     methods: {
@@ -192,7 +200,8 @@ export default {
                 this.fieldsOfComponiesData.unshift({
                     name: field.name,
                     tag: field.tag,
-                    showInColumnTable: field.showInColumnTable
+                    showInColumnTable: field.showInColumnTable,
+                    showInFilter: field.showInFilter,
                 })
             })
         }

@@ -9,6 +9,13 @@
             >
                 Экспорт
             </v-btn>
+            <v-btn
+                depressed
+                color="success"
+                @click="isShow = true"
+            >
+                Фильтры
+            </v-btn>
         </v-col>
         <v-col sm="12" cols="12" v-for="(entity, index) in cores" :key="entity.idCore">
             <h2>{{ entity.name }}</h2>
@@ -33,19 +40,32 @@
                 Экспорт
             </v-btn>
         </v-col>
+        <filter2fields
+            :fields="fieldsInFilter"
+            :isShow="isShow"
+            @closeFilter="closeFilter"
+            v-if="isShow"
+        ></filter2fields>
+        {{ cores }}
     </v-row>
 </template>
 
 <script>
 const serverSetting = require('../server/config/serverSetting.json')
+import filter2fields from '../components/filter2fields.vue'
 
 export default {
     data: () => ({
         cores: [],
         fields: [],
+        fieldsInFilter: [],
+        isShow: false
     }),
-    components: {},
+    components: {filter2fields},
     methods: {
+        closeFilter() {
+            console.log(fields)
+        },
         async exportToExcel() {
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel`, {
                 method: "POST",

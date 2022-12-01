@@ -82,7 +82,6 @@ module.exports = function(app, upload) {
 
     app.post('/linkedFields', async (req, res) => {
         const { idTheCore } = req.body
-        console.log(idTheCore)
 
         const item = await core2core.findOne({
             where: {
@@ -175,7 +174,8 @@ module.exports = function(app, upload) {
                 await typeOfField.update({
                     name: field.name,
                     tag: cyrillicToTranslit.transform(field.name, '-').toLowerCase(),
-                    showInColumnTable: field.showInColumnTable
+                    showInColumnTable: field.showInColumnTable,
+                    showInFilter: field.showInFilter
                 }, {
                     where: {
                         tag: field.tag
@@ -424,12 +424,21 @@ module.exports = function(app, upload) {
             for(let g = 0; g < file2field.length; g++) {
                 let f2f = file2field[g]
 
+                let baseField = await coreTypeOfField.findAll({
+                    include: {
+                        model: typeOfField,
+                        where: {
+                            idTypeOfField: f2f.uniqueField
+                        }
+                    }
+                })
+
                 for(let j = 0; j < f2f.fields.length; j++) {
                     let field = f2f.fields[j]
 
                     if(field.item.length && f2f.uniqueField === field.idTypeOfField) {
                         let data = fileItem[`${field.item[0].name}`]
-                        let baseField = await coreTypeOfField.findOne({
+                        baseField = await coreTypeOfField.findOne({
                             where: {
                                 value: data,
                             },
@@ -710,10 +719,10 @@ module.exports = function(app, upload) {
                         // return
                         if(isSplited) {
                             FAVS.forEach(fav => {
-                                let t = {}
                                 let s = Object.values(fav)[0].split('\r\n')
 
                                 s.forEach(elem => {
+                                    let t = {}
                                     if(elem) {
                                         t[`${Object.keys(fav)[0]}`] = elem
                                         fieldsAndValue.push(t)
@@ -723,8 +732,7 @@ module.exports = function(app, upload) {
                         } else {
                             FAVS.forEach(fav => {
                                 let t = {}
-
-                                t[`${Object.keys(fav)[0]}`] = Object.values(fav)[0]
+                                t[`${Object.keys(fav)[0]}`] = Object.values(fav)[0].replaceAll('\r\n', '\n')
                                 fieldsAndValue.push(t)
                             })
                         }
@@ -734,6 +742,8 @@ module.exports = function(app, upload) {
                 }
             }
         }
+        // res.json(FAVS)
+        // return
 
         let result = []
 
@@ -766,24 +776,30 @@ module.exports = function(app, upload) {
             if(itterators[itterators.length - 1] >= fieldsAndValue.length) break
         }
 
+        if(isSplited) {
+            let key = Object.keys(result[0])[0]
+            let set = []
+
+            result.forEach(r => {
+                set.push(Object.values(r)[0])
+            })
+
+            set = new Set(set)
+            set = [...set]
+            result = []
+
+            set.forEach(s => {
+                let t = {}
+                t[`${key}`] = s
+                result.push(t)
+            })
+        }
+
         res.xls('data.xlsx', result)
         // res.json(result)
     })
 
-    app.post('/test', async (req, res) => {
-        var jsonArr = [{
-            "foo:foo": 'bar',
-            "qux:foo": 'moo',
-            "poo:foo": 123,
-            "stux:foo": new Date()
-        },
-        {
-            "foo:foo": 'bar',
-            "qux:foo": 'moo',
-            "poo:foo": 345,
-            "stux:foo": new Date()
-        }];
-
-        res.xls('data.xlsx', jsonArr)
+    app.get('/settings', async (req, res) => {
+        
     })
 }

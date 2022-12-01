@@ -5,7 +5,7 @@
         sm="12"
         >
             <nav>
-                <nuxt-link to="/" active-class="active-btn">
+                <nuxt-link to="/import" active-class="active-btn">
                     <v-btn
                     depressed
                     dark
