@@ -84,9 +84,30 @@ const coreTypeOfField = sequelize.define('coreTypeOfField', {
   }
 })
 
+const classOfField = sequelize.define('classOfField', {
+  idClass: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+    allowNull: false,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: "Универсальное поле"
+  },
+  type: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'universal'
+  }
+})
+
 // Связи
 core.belongsToMany(theCore, {through: "coreHasTheCore"})
 theCore.belongsToMany(core, {through: "coreHasTheCore"})
+classOfField.hasMany(typeOfField)
+typeOfField.belongsTo(classOfField)
 
 theCore.belongsToMany(typeOfField, {through: coreTypeOfField, uniqueKey: "coreTypeOfFieldUnique"})
 typeOfField.belongsToMany(theCore, {through: coreTypeOfField, uniqueKey: "coreTypeOfFieldUnique"})
@@ -95,14 +116,19 @@ coreTypeOfField.belongsTo(theCore)
 typeOfField.hasMany(coreTypeOfField)
 coreTypeOfField.belongsTo(typeOfField)
 
-module.exports = {
-  dbBaseSetting,
-  DataTypes,
-  sequelize,
-  Op,
+const Scheme = {
   core,
   theCore,
   core2core,
   typeOfField,
   coreTypeOfField,
+  classOfField,
+}
+
+module.exports = {
+  dbBaseSetting,
+  DataTypes,
+  sequelize,
+  Op,
+  Scheme
 }

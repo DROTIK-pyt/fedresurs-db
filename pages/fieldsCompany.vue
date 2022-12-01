@@ -26,6 +26,14 @@
             cols="12"
             sm="10"
             >
+                <v-select
+                    :items="classOfFields"
+                    item-text="name"
+                    item-value="type"
+                    label="Класс поля"
+                    v-model="class2field"
+                    solo
+                ></v-select>
                 <v-text-field
                     v-model="newFieldName"
                     label="Новое поле"
@@ -69,6 +77,15 @@
                     
                     >
                         <div class="d-flex justify-space-between align-end">
+                            <v-select
+                                :items="classOfFields"
+                                item-text="name"
+                                v-model="fieldsOfCompony.classOfField"
+                                item-value="type"
+                                label="Класс поля"
+                                class="mr-4"
+                                solo
+                            ></v-select>
                             <v-text-field
                                 v-model="fieldsOfCompony.name"
                                 label="Наименование поля"
@@ -128,6 +145,8 @@ export default {
         errorChanged: "",
         toDelete: false,
         loading: true,
+        classOfFields: [],
+        class2field: "",
 
         disabledBtnSave: true,
     }),
@@ -142,7 +161,8 @@ export default {
                     'Content-Type': 'application/json;charset=utf-8',
                 },
                 body: JSON.stringify({
-                    newFieldName: this.newFieldName
+                    newFieldName: this.newFieldName,
+                    class2field: this.class2field
                 })
             })
 
@@ -191,17 +211,27 @@ export default {
             // Получить поля компаний
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsValues`)
             const fieldsOfComponies = await data.json()
-            console.log(fieldsOfComponies)
+            // console.log(fieldsOfComponies.fieldsValues)
 
             // Вставить их в данные
             this.fieldsOfComponiesData = []
 
             fieldsOfComponies.fieldsValues.forEach(field => {
+                // console.log(field.classOfField?.type)
+
                 this.fieldsOfComponiesData.unshift({
                     name: field.name,
                     tag: field.tag,
                     showInColumnTable: field.showInColumnTable,
                     showInFilter: field.showInFilter,
+                    classOfField: field.classOfField?.type ? field.classOfField?.type : "universal"
+                })
+            })
+
+            fieldsOfComponies.class2fields.forEach(c2f => {
+                this.classOfFields.push({
+                    name: c2f.name,
+                    type: c2f.type,
                 })
             })
         }
@@ -215,6 +245,9 @@ export default {
 </script>
 
 <style scoped>
+.v-select {
+    max-width: 400px;
+}
 .lds-ring {
   display: inline-block;
   position: relative;

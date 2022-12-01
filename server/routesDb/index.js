@@ -1,4 +1,4 @@
-const { core, core2core, typeOfField, theCore, coreTypeOfField, Op } = require('../db/scheme')
+const { Scheme, Op } = require('../db/scheme')
 const CyrillicToTranslit = require('cyrillic-to-translit-js')
 const parser = require('simple-excel-to-json')
 const cyrillicToTranslit = new CyrillicToTranslit()
@@ -37,12 +37,12 @@ module.exports = function(app, upload) {
     app.post('/field', async (req, res) => {
         const { idEntity } = req.body
 
-        const data = await theCore.findOne({
+        const data = await Scheme.theCore.findOne({
             where: {
                 idTheCore: idEntity
             },
             include: {
-                model: core
+                model: Scheme.core
             },
         })
 
@@ -52,14 +52,14 @@ module.exports = function(app, upload) {
     app.post('/fields', async (req, res) => {
         const { idCore } = req.body
 
-        const data = await core.findOne({
+        const data = await Scheme.core.findOne({
             where: {
                 idCore
             },
             include: {
-                model: theCore,
+                model: Scheme.theCore,
                 include: {
-                    model: typeOfField
+                    model: Scheme.typeOfField
                 }
             },
         })
@@ -83,18 +83,18 @@ module.exports = function(app, upload) {
     app.post('/linkedFields', async (req, res) => {
         const { idTheCore } = req.body
 
-        const item = await core2core.findOne({
+        const item = await Scheme.core2core.findOne({
             where: {
                 parentCoreId: idTheCore
             }
         })
 
-        const data = await theCore.findOne({
+        const data = await Scheme.theCore.findOne({
             where: {
                 idTheCore: item.childCoreId
             },
             include: {
-                model: typeOfField
+                model: Scheme.typeOfField
             }
         })
 
@@ -102,7 +102,7 @@ module.exports = function(app, upload) {
     })
 
     app.get('/entities', async (req, res) => {
-        const data = await core.findAll({
+        const data = await Scheme.core.findAll({
             where: {
                 showInTable: true
             }
@@ -112,20 +112,27 @@ module.exports = function(app, upload) {
     })
 
     app.post('/add-new-field', async (req, res) => {
-        const { newFieldName } = req.body
+        const { newFieldName, class2field } = req.body
 
         if (newFieldName != "") {
-            const foundFields = await typeOfField.findAll({
+            const foundFields = await Scheme.typeOfField.findAll({
                 where: {    
                     name: newFieldName
                 }
             })
 
             if(foundFields.length === 0) {
-                await typeOfField.create({
+                const TOF = await Scheme.typeOfField.create({
                     name: newFieldName,
                     tag: cyrillicToTranslit.transform(newFieldName, '-').toLowerCase()
                 })
+                const c2f = await Scheme.classOfField.findOne({
+                    where: {
+                        type: class2field
+                    }
+                })
+
+                if(c2f) c2f.addTypeOfField(TOF)
             } else {
                 res.json({ok: false, msg: "Есть совпадения по именам."})
                 return
@@ -141,14 +148,14 @@ module.exports = function(app, upload) {
         const { newFieldName, showInTable } = req.body
 
         if (newFieldName != "") {
-            const foundFields = await core.findAll({
+            const foundFields = await Scheme.core.findAll({
                 where: {    
                     name: newFieldName
                 }
             })
 
             if(foundFields.length === 0) {
-                await core.create({
+                await Scheme.core.create({
                     name: newFieldName,
                     showInTable
                 })
@@ -171,7 +178,7 @@ module.exports = function(app, upload) {
             field = fieldsOfComponiesData[i]
 
             if(field.name != "") {
-                await typeOfField.update({
+                await Scheme.typeOfField.update({
                     name: field.name,
                     tag: cyrillicToTranslit.transform(field.name, '-').toLowerCase(),
                     showInColumnTable: field.showInColumnTable,
@@ -181,6 +188,21 @@ module.exports = function(app, upload) {
                         tag: field.tag
                     }
                 })
+
+                const TOF = await Scheme.typeOfField.findOne({
+                    where: {
+                        tag: cyrillicToTranslit.transform(field.name, '-').toLowerCase()
+                    }
+                })
+                const c2f = await Scheme.classOfField.findOne({
+                    where: {
+                        type: field.classOfField
+                    },
+                })
+
+                if(c2f) {
+                    await c2f.addTypeOfField(TOF)
+                }
             } else {
                 res.json({ok: false, msg: "Поля не должны быть пустыми."})
                 return
@@ -197,7 +219,7 @@ module.exports = function(app, upload) {
             field = fieldsOfComponiesData[i]
 
             if(field.name != "") {
-                await core.update({
+                await Scheme.core.update({
                     name: field.name,
                     showInTable: field.showInTable
                 }, {
@@ -216,7 +238,7 @@ module.exports = function(app, upload) {
     app.delete('/fields', async (req, res) => {
         const { tag } = req.body
 
-        await typeOfField.destroy({
+        await Scheme.typeOfField.destroy({
             where: {
                 tag
             }
@@ -228,11 +250,11 @@ module.exports = function(app, upload) {
     app.post('/entityViaId', async (req, res) => {
         const { idEntity } = req.body
 
-        const item = await theCore.findOne({
+        const item = await Scheme.theCore.findOne({
             where: {
                 idTheCore: idEntity,
             },
-            include: typeOfField
+            include: Scheme.typeOfField
         })
 
         res.json({ok: true, item})
@@ -241,7 +263,7 @@ module.exports = function(app, upload) {
     app.post('/linkedEntity', async (req, res) => {
         const { idTheCore } = req.body
 
-        const item = await core2core.findOne({
+        const item = await Scheme.core2core.findOne({
             where: {
                 parentCoreId: idTheCore
             }
@@ -249,11 +271,11 @@ module.exports = function(app, upload) {
 
         let theCores
         if(item) {
-            theCores = await theCore.findOne({
+            theCores = await Scheme.theCore.findOne({
                 where: {
                     idTheCore: item.childCoreId,
                 },
-                include: core
+                include: Scheme.core
             })
 
             res.json({ok: true, cores: theCores.cores})
@@ -266,7 +288,7 @@ module.exports = function(app, upload) {
         const { file } = req
         const { uniqueSuffix } = req.body
 
-        let fieldsValues = await typeOfField.findAll()
+        let fieldsValues = await Scheme.typeOfField.findAll()
 
         const readFile = parser.parseXls2Json(req.originalSrc)
         readFile[0].forEach(field => {
@@ -283,17 +305,21 @@ module.exports = function(app, upload) {
     })
 
     app.get('/fieldsValues', async (req, res) => {
-        const fieldsValues = await typeOfField.findAll()
+        const fieldsValues = await Scheme.typeOfField.findAll({
+            include: Scheme.classOfField
+        })
 
-        res.json({ok: true, fieldsValues})
+        const class2fields = await Scheme.classOfField.findAll()
+
+        res.json({ok: true, fieldsValues, class2fields})
     })
 
     app.get('/fieldsValuesExport', async (req, res) => {
-        const cores = await core.findAll({
+        const cores = await Scheme.core.findAll({
             include: {
-                model: theCore,
+                model: Scheme.theCore,
                 include: {
-                    model: typeOfField
+                    model: Scheme.typeOfField
                 }
             }
         })
@@ -360,14 +386,14 @@ module.exports = function(app, upload) {
     })
 
     app.get('/cores', async (req, res) => {
-        const cores = await core.findAll()
+        const cores = await Scheme.core.findAll()
 
         res.json({ok: true, cores})
     })
 
     app.delete('/cores', async (req, res) => {
         const { idCore } = req.body
-        await core.destroy({
+        await Scheme.core.destroy({
             where: { idCore }
         })
 
@@ -424,9 +450,9 @@ module.exports = function(app, upload) {
             for(let g = 0; g < file2field.length; g++) {
                 let f2f = file2field[g]
 
-                let baseField = await coreTypeOfField.findAll({
+                let baseField = await Scheme.coreTypeOfField.findAll({
                     include: {
-                        model: typeOfField,
+                        model: Scheme.typeOfField,
                         where: {
                             idTypeOfField: f2f.uniqueField
                         }
@@ -438,12 +464,12 @@ module.exports = function(app, upload) {
 
                     if(field.item.length && f2f.uniqueField === field.idTypeOfField) {
                         let data = fileItem[`${field.item[0].name}`]
-                        baseField = await coreTypeOfField.findOne({
+                        baseField = await Scheme.coreTypeOfField.findOne({
                             where: {
                                 value: data,
                             },
                             include: {
-                                model: typeOfField,
+                                model: Scheme.typeOfField,
                                 where: {
                                     idTypeOfField: f2f.uniqueField
                                 }
@@ -480,7 +506,7 @@ module.exports = function(app, upload) {
                                 let data = fileItem[`${field.item[0].name}`]
 
                                 if(f2f.action === actions.update) {
-                                    await coreTypeOfField.update({
+                                    await Scheme.coreTypeOfField.update({
                                         value: data
                                     }, {
                                         where: {
@@ -494,7 +520,7 @@ module.exports = function(app, upload) {
                                 }
                                 if(f2f.action === actions.supplement) {
                                     if(f2f.supplementFields.indexOf(field.idTypeOfField) > -1) {
-                                        let toSupplement = await coreTypeOfField.findOne({
+                                        let toSupplement = await Scheme.coreTypeOfField.findOne({
                                             where: {
                                                 theCoreIdTheCore,
                                                 typeOfFieldIdTypeOfField: field.idTypeOfField
@@ -505,7 +531,7 @@ module.exports = function(app, upload) {
                                             // return
                                             let value = toSupplement.value
                                             value += `\n${data}`
-                                            await coreTypeOfField.update({
+                                            await Scheme.coreTypeOfField.update({
                                                 value
                                             }, {
                                                 where: {
@@ -532,12 +558,12 @@ module.exports = function(app, upload) {
                         let field = f2f.fields[j]
 
                         if(field.item.length) {
-                            aCore = await core.findOne({
+                            aCore = await Scheme.core.findOne({
                                 where: {
                                     idCore: f2f.idCore
                                 }
                             })
-                            newTheCore = await theCore.create()
+                            newTheCore = await Scheme.theCore.create()
                             await aCore.addTheCore(newTheCore)
                             prepareRelations[i].push({
                                 idCore: f2f.idCore,
@@ -555,7 +581,7 @@ module.exports = function(app, upload) {
 
                             if(field.item.length) {
                                 let data = fileItem[`${field.item[0].name}`]
-                                let TOF = await typeOfField.findOne({
+                                let TOF = await Scheme.typeOfField.findOne({
                                     where: {
                                         idTypeOfField: field.idTypeOfField
                                     }
@@ -596,7 +622,7 @@ module.exports = function(app, upload) {
                     if(Object.keys(parent).length &&
                        Object.keys(child).length) 
                     {
-                        await core2core.create({
+                        await Scheme.core2core.create({
                             parentCoreId: parent.newTheCore.idTheCore,
                             childCoreId: child.newTheCore.idTheCore,
                         })
@@ -636,20 +662,20 @@ module.exports = function(app, upload) {
             for(let g = 0; g < aCore?.exportField?.length; g++) {
                 let idExportField = aCore.exportField[g]
 
-                let data = await coreTypeOfField.findAll({
+                let data = await Scheme.coreTypeOfField.findAll({
                     where: {
                         typeOfFieldIdTypeOfField: idExportField,
                     },
                     include: [{
-                        model: theCore,
+                        model: Scheme.theCore,
                         include: {
-                            model: core,
+                            model: Scheme.core,
                             where: {
                                 idCore: aCore.idCore
                             }
                         }
                     }, {
-                        model: typeOfField
+                        model: Scheme.typeOfField
                     }],
                 })
 
