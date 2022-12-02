@@ -2,8 +2,8 @@ const { Scheme, Op } = require('../db/scheme')
 const CyrillicToTranslit = require('cyrillic-to-translit-js')
 const parser = require('simple-excel-to-json')
 const cyrillicToTranslit = new CyrillicToTranslit()
-// const json2xls = require('json2xls')
-// const fs = require('fs')
+const json2xls = require('json2xls')
+const fs = require('fs')
 // const path = require('path')
 
 const cache = []
@@ -846,7 +846,7 @@ module.exports = function(app, upload) {
                         // return
                         if(isSplited) {
                             FAVS.forEach(fav => {
-                                let s = Object.values(fav)[0].split('\r\n')
+                                let s = Object.values(fav)[0].split('\n')
 
                                 s.forEach(elem => {
                                     let t = {}
@@ -859,7 +859,11 @@ module.exports = function(app, upload) {
                         } else {
                             FAVS.forEach(fav => {
                                 let t = {}
-                                t[`${Object.keys(fav)[0]}`] = Object.values(fav)[0].replaceAll('\r\n', '\n')
+                                t[`${Object.keys(fav)[0]}`] = Object.values(fav)[0].replaceAll('\n', '\r')
+                                // if(Object.keys(fav)[0] === "Контакты:Телефон" && Object.values(fav)[0].length > 20) {
+                                //     res.json(t)
+                                //     return
+                                // }
                                 fieldsAndValue.push(t)
                             })
                         }
@@ -874,7 +878,7 @@ module.exports = function(app, upload) {
 
         let result = []
 
-        let itterators = Array(Math.floor(fieldsAndValue.length / rows[0][0].length)).fill(0)
+        let itterators = Array(Math.round(fieldsAndValue.length / rows[0][0].length)).fill(0)
 
         for(let i = 0; i < itterators.length; i++) {
             itterators[i] += i * rows[0][0].length
@@ -888,6 +892,7 @@ module.exports = function(app, upload) {
             let i = itterators[iterat]
 
             let elem = fieldsAndValue[i]
+
             t[`${Object.keys(elem)[0]}`] = Object.values(elem)[0]
 
             iterat++
@@ -911,8 +916,7 @@ module.exports = function(app, upload) {
                 set.push(Object.values(r)[0])
             })
 
-            set = new Set(set)
-            set = [...set]
+            set = [...new Set(set)]
             result = []
 
             set.forEach(s => {
@@ -927,6 +931,18 @@ module.exports = function(app, upload) {
     })
 
     app.get('/settings', async (req, res) => {
-        
+        var json = {
+            foo: 'barbarfaz',
+            qux: 'moo',
+            poo: 123,
+            stux: new Date()
+        }
+
+        var xls = json2xls(json,{
+            fields: ['foo']
+        });
+
+        fs.writeFileSync('data.xlsx', xls, 'binary');
+        res.end()
     })
 }
