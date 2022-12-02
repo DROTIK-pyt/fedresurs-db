@@ -116,6 +116,12 @@
             cols="12"
             sm="12"
             >
+                <h3>Не рекомендуется назначать "Уникальное поле" поле с типом "Универсальное поле"</h3>
+            </v-col>
+            <v-col
+            cols="12"
+            sm="12"
+            >
             <v-tabs
                 v-model="tabs"
                 centered
@@ -149,7 +155,7 @@
                                     v-for="field in core.fields"
                                     :key="field.tag"
                                 >
-                                <h4 class="mb-1 bordered px-1">{{ field.name }}</h4>
+                                <h4 class="mb-1 bordered px-1">{{ field.name }} -> <small>{{ field.type }}</small></h4>
                                 <draggable
                                     class="list-group bordered pa-3"
                                     tag="ul"
@@ -208,10 +214,10 @@
                                     sm="3"
                                     v-if="core.action === `supplement`"
                                 >
-                                    <h4 class="mb-1 bordered px-1">Куда дополнять</h4>
+                                    <h4 class="mb-1 bordered px-1">Что дополнить</h4>
                                     <v-select
                                     :items="uniqueFields"
-                                    label="Куда..."
+                                    label="Поля.."
                                     outlined
                                     item-value="idTypeOfField"
                                     item-text="name"
@@ -277,6 +283,7 @@
             </v-col>
         </v-row>
         </v-col>
+        {{ fieldsSystem }}
     </v-row>
 </template>
 
@@ -393,7 +400,8 @@ export default {
                             item: [],
                             name: field.name,
                             tag: field.tag,
-                            idTypeOfField: field.idTypeOfField
+                            idTypeOfField: field.idTypeOfField,
+                            type: field.classOfField.type
                         })
                     })
                 })

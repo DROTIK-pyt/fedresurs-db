@@ -2,9 +2,9 @@ const { Scheme, Op } = require('../db/scheme')
 const CyrillicToTranslit = require('cyrillic-to-translit-js')
 const parser = require('simple-excel-to-json')
 const cyrillicToTranslit = new CyrillicToTranslit()
-const json2xls = require('json2xls')
-const fs = require('fs')
-const path = require('path')
+// const json2xls = require('json2xls')
+// const fs = require('fs')
+// const path = require('path')
 
 const cache = []
 
@@ -12,6 +12,12 @@ const actions = {
     skip: "skip",
     update: "update",
     supplement: "supplement"
+}
+
+const classesFields = {
+    universal: "universal",
+    phoneNumber: "phone-number",
+    requisits: "requisits",
 }
 
 function ExcelDateToJSDate(serial) {
@@ -431,6 +437,9 @@ module.exports = function(app, upload) {
         let aCore
         let newTheCore
 
+        // res.json(file2field)
+        // return
+
         const readFile = cache.find(c => c.id === uniqueSuffix).readFile[0]
 
         // res.json(readFile)
@@ -450,35 +459,36 @@ module.exports = function(app, upload) {
             for(let g = 0; g < file2field.length; g++) {
                 let f2f = file2field[g]
 
-                let baseField = await Scheme.coreTypeOfField.findAll({
-                    include: {
-                        model: Scheme.typeOfField,
-                        where: {
-                            idTypeOfField: f2f.uniqueField
+                let baseField = []
+                if(f2f?.uniqueField) {
+                    baseField = await Scheme.coreTypeOfField.findAll({
+                        include: {
+                            model: Scheme.typeOfField,
+                            where: {
+                                idTypeOfField: f2f.uniqueField
+                            },
+                            include: {
+                                model: Scheme.classOfField
+                            }
                         }
-                    }
-                })
+                    })
+                }
+
+                // res.json(baseField)
+                // return
 
                 for(let j = 0; j < f2f.fields.length; j++) {
                     let field = f2f.fields[j]
 
                     if(field.item.length && f2f.uniqueField === field.idTypeOfField) {
                         let data = fileItem[`${field.item[0].name}`]
-                        baseField = await Scheme.coreTypeOfField.findOne({
-                            where: {
-                                value: data,
-                            },
-                            include: {
-                                model: Scheme.typeOfField,
-                                where: {
-                                    idTypeOfField: f2f.uniqueField
-                                }
-                            }
-                        })
-                        // console.log({field, item: field.item, name: field.item[0].name, value: data})
-                        // console.log({baseField: baseField?.toJSON()})
-                        if(baseField) {
-                            wasOverlaped[i].push(baseField.theCoreIdTheCore)
+
+                        let isFound = baseField.find(f => f.value === data)
+                        
+                        if(isFound) {
+                            // res.json(isFound)
+                            // return
+                            wasOverlaped[i].push(isFound.theCoreIdTheCore)
                         }
                     }
                 }
@@ -491,54 +501,139 @@ module.exports = function(app, upload) {
         for(let i = 0; i < readFile.length; i++) {
             let fileItem = readFile[i]
             prepareRelations[i] = []
+            // res.json(wasOverlaped)
+            // return
 
             if(wasOverlaped[i].length) {
                 for(let w = 0; w < wasOverlaped[i].length; w++) {
                     let theCoreIdTheCore = wasOverlaped[i][w]
+                    let filledFields = []
+
+                    const aTheCore = await Scheme.theCore.findOne({
+                        where: {
+                            idTheCore: theCoreIdTheCore
+                        },
+                        include: [
+                            {
+                                model: Scheme.typeOfField
+                            },
+                            {
+                                model: Scheme.core
+                            }
+                        ]
+                    })
+                    aTheCore.typeOfFields.forEach(TOF => filledFields.push(TOF.tag))
                     
                     for(let g = 0; g < file2field.length; g++) {
                         let f2f = file2field[g]
                     
-                        for(let j = 0; j < f2f.fields.length; j++) {
+                        for(let j = 0; j < f2f.fields.length && f2f.name === aTheCore.cores[0].name; j++) {
                             let field = f2f.fields[j]
 
                             if(field.item.length) {
                                 let data = fileItem[`${field.item[0].name}`]
 
+                                // res.json(aTheCore.typeOfFields)
+                                // return
+
                                 if(f2f.action === actions.update) {
-                                    await Scheme.coreTypeOfField.update({
-                                        value: data
-                                    }, {
-                                        where: {
-                                            theCoreIdTheCore,
-                                            typeOfFieldIdTypeOfField: field.idTypeOfField
-                                        }
-                                    })
-                                    // console.log({theCoreIdTheCore,
-                                    //     typeOfFieldIdTypeOfField: field.idTypeOfField,
-                                    //     data})
-                                }
-                                if(f2f.action === actions.supplement) {
-                                    if(f2f.supplementFields.indexOf(field.idTypeOfField) > -1) {
-                                        let toSupplement = await Scheme.coreTypeOfField.findOne({
+                                    if(filledFields.indexOf(field.tag) > -1) {
+                                        await Scheme.coreTypeOfField.update({
+                                            value: data
+                                        }, {
                                             where: {
                                                 theCoreIdTheCore,
                                                 typeOfFieldIdTypeOfField: field.idTypeOfField
                                             }
                                         })
-                                        if(toSupplement) {
-                                            // res.json(toSupplement.toJSON())
-                                            // return
-                                            let value = toSupplement.value
-                                            value += `\n${data}`
-                                            await Scheme.coreTypeOfField.update({
-                                                value
-                                            }, {
-                                                where: {
-                                                    theCoreIdTheCore,
-                                                    typeOfFieldIdTypeOfField: field.idTypeOfField
+                                    } else {
+                                        let TOF = await Scheme.typeOfField.findOne({
+                                            where: {
+                                                idTypeOfField: field.idTypeOfField
+                                            }
+                                        })
+                                        await aTheCore.addTypeOfField(TOF, { through: { value: data } })
+                                    }
+                                    // console.log({theCoreIdTheCore,
+                                    //     typeOfFieldIdTypeOfField: field.idTypeOfField,
+                                    //     data})
+                                }
+                                if(f2f.action === actions.supplement && f2f?.supplementFields) {
+                                    if(f2f.supplementFields.indexOf(field.idTypeOfField) > -1) {
+                                        let toSupplement = await Scheme.coreTypeOfField.findOne({
+                                            where: {
+                                                theCoreIdTheCore,
+                                                typeOfFieldIdTypeOfField: field.idTypeOfField
+                                            },
+                                            include: {
+                                                model: Scheme.typeOfField,
+                                                include: {
+                                                    model: Scheme.classOfField
                                                 }
-                                            })
+                                            }
+                                        })
+                                        if(toSupplement) {
+                                            let { type } = toSupplement.typeOfField.classOfField
+                                            let datas = toSupplement.value.split('\r\n') // Данные которые уже есть в базе
+                                            let values = false // Входные данные из файла
+
+                                            if(data) {
+                                                values = data.split('\r\n')
+                                            }
+
+                                            switch(type) {
+                                                case classesFields.phoneNumber:
+                                                    if(values) {
+                                                        let toCompareDatas = []
+                                                        let toCompareValues = []
+                                                        let notAllowedSymbols = "+()- ".split("")
+
+                                                        datas.forEach(d => {
+                                                            notAllowedSymbols.forEach(na => {
+                                                                d = d.replaceAll(na, "")
+                                                            })
+
+                                                            if(d[0] === "7" || d[0] === "8") d = d.slice(1)
+                                                            toCompareDatas.push(d)
+                                                        })
+
+                                                        values.forEach(d => {
+                                                            notAllowedSymbols.forEach(na => {
+                                                                d = d.replaceAll(na, "")
+                                                            })
+
+                                                            if(d[0] === "7" || d[0] === "8") d = d.slice(1)
+                                                            toCompareValues.push(d)
+                                                        })
+                                                        toCompareDatas = toCompareDatas.filter(d => d != "")
+                                                        toCompareValues = toCompareValues.filter(d => d != "")
+                                                        
+                                                        toCompareDatas = [...new Set([...toCompareDatas, ...toCompareValues])]
+
+                                                        let result = []
+                                                        values.forEach((d, index) => {
+                                                            notAllowedSymbols.forEach(na => {
+                                                                d = d.replaceAll(na, "")
+                                                            })
+
+                                                            if(d[0] === "7" || d[0] === "8") d = d.slice(1)
+                                                            if(toCompareDatas.indexOf(d) > -1) result.push(values[index])
+                                                        })
+
+                                                        let value = result.join('\n')
+                                                        toSupplement.value = value
+                                                        await toSupplement.save()
+                                                    }
+                                                break
+                                                case classesFields.universal:
+                                                    datas = [...new Set([...datas, ...values])]
+
+                                                    let value = datas.join('\n')
+
+                                                    toSupplement.value = value
+                                                    await toSupplement.save()
+                                                break
+                                            }
                                         }
                                     }
                                 }
@@ -548,6 +643,12 @@ module.exports = function(app, upload) {
                             }
                         }
                     }
+                    // res.json(aTheCore.cores[0])
+                    // return
+                    // if(aTheCore.cores[0].idCore === 1) {
+                    //     res.json({filledFields, uploadedFields})
+                    //     return
+                    // }
                 }
             } else {
                 for(let g = 0; g < file2field.length; g++) {
