@@ -64,7 +64,8 @@ export default {
     components: {filter2fields},
     methods: {
         closeFilter() {
-            console.log(fields)
+            console.log(this.fields)
+            this.isShow = false
         },
         async exportToExcel() {
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel`, {

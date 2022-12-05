@@ -116,12 +116,6 @@
             cols="12"
             sm="12"
             >
-                <h3>Не рекомендуется назначать "Уникальное поле" поле с типом "Универсальное поле"</h3>
-            </v-col>
-            <v-col
-            cols="12"
-            sm="12"
-            >
             <v-tabs
                 v-model="tabs"
                 centered
@@ -401,7 +395,7 @@ export default {
                             name: field.name,
                             tag: field.tag,
                             idTypeOfField: field.idTypeOfField,
-                            type: field.classOfField.type
+                            type: field.classOfField.name
                         })
                     })
                 })

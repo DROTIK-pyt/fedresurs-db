@@ -84,6 +84,19 @@ const coreTypeOfField = sequelize.define('coreTypeOfField', {
   }
 })
 
+const multiField = sequelize.define('multiField', {
+  idMultiField: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+    allowNull: false,
+  },
+  value: {
+    type: DataTypes.TEXT('LONG'),
+    allowNull: false,
+  }
+})
+
 const classOfField = sequelize.define('classOfField', {
   idClass: {
     type: DataTypes.INTEGER,
@@ -116,6 +129,11 @@ coreTypeOfField.belongsTo(theCore)
 typeOfField.hasMany(coreTypeOfField)
 coreTypeOfField.belongsTo(typeOfField)
 
+multiField.belongsTo(theCore)
+theCore.hasMany(multiField)
+multiField.belongsTo(typeOfField)
+typeOfField.hasMany(multiField)
+
 const Scheme = {
   core,
   theCore,
@@ -123,6 +141,7 @@ const Scheme = {
   typeOfField,
   coreTypeOfField,
   classOfField,
+  multiField,
 }
 
 module.exports = {

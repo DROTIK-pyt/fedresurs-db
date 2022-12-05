@@ -8,17 +8,8 @@ const fs = require('fs')
 
 const cache = []
 
-const actions = {
-    skip: "skip",
-    update: "update",
-    supplement: "supplement"
-}
-
-const classesFields = {
-    universal: "universal",
-    phoneNumber: "phone-number",
-    requisits: "requisits",
-}
+const actions = require("../config/importActions.json")
+const classesFields = require("../config/fieldsClass.json")
 
 function ExcelDateToJSDate(serial) {
     let utc_days  = Math.floor(serial - 25569);
