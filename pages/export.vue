@@ -70,6 +70,8 @@ export default {
     methods: {
         closeFilter(filters) {
             this.isShow = false
+
+            this.filters = filters
         },
         async exportToExcel() {
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel`, {
