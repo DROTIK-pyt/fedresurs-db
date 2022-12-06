@@ -379,7 +379,24 @@ module.exports = function(app, upload) {
             }
         }
 
-        res.json({ok: true, fieldsValues: result})
+        const aTheCore = await Scheme.core.findAll({
+            include: {
+                model: Scheme.theCore,
+                include: {
+                    model: Scheme.typeOfField,
+                    include: {
+                        model: Scheme.coreTypeOfField,
+                        where: {
+                            value: {
+                                [Op.ne]: ""
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        res.json({ok: true, fieldsValues: result, fieldsValuesExport: aTheCore})
     })
 
     app.get('/cores', async (req, res) => {
@@ -399,7 +416,6 @@ module.exports = function(app, upload) {
 
     app.post('/cacheItem', async (req, res) => {
         const { uniqueSuffix } = req.body   
-
         res.json({ok: true, readFile: cache.find(item => item.id === uniqueSuffix)?.readFile})
     })
 
@@ -733,7 +749,19 @@ module.exports = function(app, upload) {
     })
 
     app.post('/exportToExcel', async (req, res) => {
-        const { cores } = req.body
+        const { cores, filters } = req.body
+        const filterKeyCores = Object.keys(filters).map(f => +f)
+        const filterIdTheCoreValues = Object.values(filters)
+
+        for(let filterCurrentIndex = 0; filterCurrentIndex < filterIdTheCoreValues.length; filterCurrentIndex++) {
+            if(!filterIdTheCoreValues[filterCurrentIndex].length) {
+                filterIdTheCoreValues.splice(filterCurrentIndex, 1)
+                filterKeyCores.splice(filterCurrentIndex, 1)
+            }
+        }
+        
+        // res.json({filterKeyCores, filterIdTheCoreValues})
+        // return
 
         let isSplited = true
         let cnt = 0
@@ -754,22 +782,52 @@ module.exports = function(app, upload) {
             for(let g = 0; g < aCore?.exportField?.length; g++) {
                 let idExportField = aCore.exportField[g]
 
-                let data = await Scheme.coreTypeOfField.findAll({
-                    where: {
-                        typeOfFieldIdTypeOfField: idExportField,
-                    },
-                    include: [{
-                        model: Scheme.theCore,
-                        include: {
-                            model: Scheme.core,
+                let index = filterKeyCores.indexOf(aCore.idCore)
+
+                // res.json(filterIdTheCoreValues[index])
+                // return
+
+                let data
+                if(index > -1) {
+                    data = await Scheme.coreTypeOfField.findAll({
+                        where: {
+                            typeOfFieldIdTypeOfField: idExportField,
+                        },
+                        include: [{
+                            model: Scheme.theCore,
                             where: {
-                                idCore: aCore.idCore
+                                idTheCore: {
+                                    [Op.in]: filterIdTheCoreValues[index]
+                                }
+                            },
+                            include: {
+                                model: Scheme.core,
+                                where: {
+                                    idCore: aCore.idCore
+                                }
                             }
-                        }
-                    }, {
-                        model: Scheme.typeOfField
-                    }],
-                })
+                        }, {
+                            model: Scheme.typeOfField,
+                        }],
+                    })
+                } else {
+                    data = await Scheme.coreTypeOfField.findAll({
+                        where: {
+                            typeOfFieldIdTypeOfField: idExportField,
+                        },
+                        include: [{
+                            model: Scheme.theCore,
+                            include: {
+                                model: Scheme.core,
+                                where: {
+                                    idCore: aCore.idCore
+                                }
+                            }
+                        }, {
+                            model: Scheme.typeOfField,
+                        }],
+                    })
+                }
 
                 allData[`${aCore.name}`].push(data)
             }
@@ -808,6 +866,9 @@ module.exports = function(app, upload) {
         let FAVS = []
         rows = rows.filter(row => row.length)
 
+        // res.json(rows)
+        // return
+
         // res.json(rows[0][0][0]) // rows[сущность][поле][значение]
         // return
 
@@ -817,11 +878,13 @@ module.exports = function(app, upload) {
             let headElem = rows[itteratorsCors][itteratorsData][iData]
             // console.log({itteratorsCors, itteratorsData, iData})
 
-            // res.json(headElem)
-            // return
-
-            FAV[`${Object.keys(headElem)[0]}`] = Object.values(headElem)[0]
-            FAVS.push(FAV)
+            try {
+                FAV[`${Object.keys(headElem)[0]}`] = Object.values(headElem)[0]
+                FAVS.push(FAV)
+            } catch {
+                // res.json(headElem)
+                // return
+            }
 
             iData++
             if(iData >= rows[0][0].length) {
@@ -921,19 +984,22 @@ module.exports = function(app, upload) {
         // res.json(result)
     })
 
-    app.get('/settings', async (req, res) => {
-        var json = {
-            foo: 'barbarfaz',
-            qux: 'moo',
-            poo: 123,
-            stux: new Date()
-        }
+    app.get('/test', async (req, res) => {
+        const test = await Scheme.core.findAll({
+            where: {
+                idCore: 1
+            },
+            include: {
+                model: Scheme.theCore,
+                where: {
+                    idTheCore: {
+                        [Op.in]: [1,2,3,4],
+                    }
+                }
+            }
+        })
 
-        var xls = json2xls(json,{
-            fields: ['foo']
-        });
-
-        fs.writeFileSync('data.xlsx', xls, 'binary');
-        res.end()
+        res.json(test)
+        return
     })
 }

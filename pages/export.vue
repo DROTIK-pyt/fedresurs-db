@@ -12,7 +12,9 @@
             <v-btn
                 depressed
                 color="success"
-                @click="isShow = true"
+                @click="showFilters"
+                :loading="loading"
+                :disabled="loading"
             >
                 Фильтры
             </v-btn>
@@ -59,12 +61,14 @@ export default {
         cores: [],
         fields: [],
         fieldsInFilter: [],
-        isShow: false
+        isShow: false,
+        loading: true,
+
+        filters: null,
     }),
     components: {filter2fields},
     methods: {
-        closeFilter() {
-            console.log(this.fields)
+        closeFilter(filters) {
             this.isShow = false
         },
         async exportToExcel() {
@@ -75,7 +79,8 @@ export default {
                     'Content-Type': 'application/json;charset=utf-8'
                 },
                 body: JSON.stringify({
-                    cores: this.cores
+                    cores: this.cores,
+                    filters: this.filters
                 })
             })
 
@@ -87,12 +92,16 @@ export default {
             a.style.display = 'none'
             a.click()
         },
+        async showFilters() {
+            this.isShow = true
+        },
         async getAllData() {
             const dataCores = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/cores`)
             const resultCores = await dataCores.json()
 
             if(resultCores.ok) {
                 this.cores = resultCores.cores
+                this.fieldsInFilter = resultCores.cores
 
                 this.cores.forEach(aCore => {
                     aCore.exportField = []
@@ -104,7 +113,10 @@ export default {
 
             if(resultTypeOfField.ok) {
                 this.fields = resultTypeOfField.fieldsValues
+                this.fieldsInFilter = resultTypeOfField.fieldsValuesExport
             }
+
+            this.loading = false
         },
     },
     async beforeMount() {
