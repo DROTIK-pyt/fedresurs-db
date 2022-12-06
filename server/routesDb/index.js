@@ -750,8 +750,8 @@ module.exports = function(app, upload) {
 
     app.post('/exportToExcel', async (req, res) => {
         const { cores, filters } = req.body
-        const filterKeyCores = Object.keys(filters).map(f => +f)
-        const filterIdTheCoreValues = Object.values(filters)
+        const filterKeyCores = Object.keys(filters).map(f => +f) || []
+        const filterIdTheCoreValues = Object.values(filters) || []
 
         for(let filterCurrentIndex = 0; filterCurrentIndex < filterIdTheCoreValues.length; filterCurrentIndex++) {
             if(!filterIdTheCoreValues[filterCurrentIndex].length) {

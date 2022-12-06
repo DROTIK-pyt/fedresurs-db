@@ -64,7 +64,7 @@ export default {
         isShow: false,
         loading: true,
 
-        filters: null,
+        filters: [],
     }),
     components: {filter2fields},
     methods: {
