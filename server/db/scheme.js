@@ -116,6 +116,31 @@ const classOfField = sequelize.define('classOfField', {
   }
 })
 
+const user = sequelize.define("user", {
+  idUser: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+    allowNull: false,
+  },
+  login: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  signature: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  refreshToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+})
+
 // Связи
 core.belongsToMany(theCore, {through: "coreHasTheCore"})
 theCore.belongsToMany(core, {through: "coreHasTheCore"})
@@ -142,6 +167,7 @@ const Scheme = {
   coreTypeOfField,
   classOfField,
   multiField,
+  user,
 }
 
 module.exports = {

@@ -6,8 +6,7 @@ const cors = require('cors')
 const multer  = require('multer')
 const path = require('path')
 const json2xls = require('json2xls')
-// const jwt = require('jsonwebtoken')
-// const signature = "FJWr"
+const jwt = require('jsonwebtoken')
 // const base64 = require('base-64')
 
 const storage = multer.diskStorage({
@@ -33,7 +32,8 @@ app.use(json2xls.middleware)
 
 app.use(express.static('static'))
 
-require('./routesDb/index')(app, upload) // Урлы запросов
+require('./routesDb/index')(app, upload, jwt) // Урлы запросов
+require('./auth/index')(app, upload, jwt) // Авторизация
 
 app.listen(baseSettings.port, () => {
     console.log(`Server start on ${baseSettings.baseUrl}:${baseSettings.port}/`)

@@ -3,10 +3,13 @@ const CyrillicToTranslit = require('cyrillic-to-translit-js')
 const parser = require('simple-excel-to-json')
 const cyrillicToTranslit = new CyrillicToTranslit()
 const json2xls = require('json2xls')
+const { v4: uuidv4 } = require('uuid')
 const fs = require('fs')
 // const path = require('path')
 
 const cache = []
+
+const sessions = []
 
 const actions = require("../config/importActions.json")
 const classesFields = require("../config/fieldsClass.json")
@@ -30,7 +33,7 @@ function ExcelDateToJSDate(serial) {
     return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
  }
 
-module.exports = function(app, upload) {
+module.exports = function(app, upload, jwt) {
     app.post('/field', async (req, res) => {
         const { idEntity } = req.body
 

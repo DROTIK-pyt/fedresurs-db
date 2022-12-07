@@ -329,16 +329,75 @@ export default {
         relations: [],
     }),
     methods: {
+        async checkTokens() {
+            let accessToken = localStorage.getItem("accessToken")
+            let sessionId = localStorage.getItem("sessionId")
+
+            if(accessToken && sessionId) {
+                const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/checkTokens`, {
+                    method: "POST",
+                    headers: {
+                        // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                        'Content-Type': 'application/json;charset=utf-8'
+                    },
+                    body: JSON.stringify({
+                        accessToken,
+                        sessionId
+                    })
+                })
+
+                const result = await data.json()
+
+                if(!result.ok) {
+                    let refreshToken = localStorage.getItem("refreshToken")
+
+                    if(refreshToken) {
+                        const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/refresh`, {
+                            method: "POST",
+                            headers: {
+                                // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                                'Content-Type': 'application/json;charset=utf-8'
+                            },
+                            body: JSON.stringify({
+                                refreshToken,
+                                sessionId
+                            })
+                        })
+
+                        const result = await data.json()
+                        if(result.ok) {
+                            localStorage.setItem("accessToken", result.accessToken)
+                            localStorage.setItem("refreshToken", result.refreshToken)
+                        } else {
+                            this.$router.push("/")
+                            return false
+                        }
+                    } else {
+                        this.$router.push("/")
+                        return false
+                    }
+                }
+            } else {
+                this.$router.push("/")
+                return false
+            }
+        },
         addRelation() {
+            this.checkTokens()
+            
             this.relations.push({
                 parentCoreId: 0,
                 childCoreId: 0
             })
         },
         deleteRelation(index) {
+            this.checkTokens()
+
             this.relations.splice(index, 1)
         },
         async clearCache() {
+            this.checkTokens()
+
             await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/clearCache`, {
                 method: "DELETE",
                 headers: {
@@ -350,14 +409,14 @@ export default {
                 })
             })
 
-            localStorage.clear()
-
             this.getFieldsSystem()
 
             this.list = []
             this.files = []
         },
         async getFieldsSystem() {
+            this.checkTokens()
+
             const listItems = JSON.parse(localStorage.getItem('list'))
             const fieldsSystem = JSON.parse(localStorage.getItem('fieldsSystem'))
 
@@ -411,6 +470,8 @@ export default {
             })
         },
         async uploadToBase() {
+            this.checkTokens()
+
             this.loading2base = true
 
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/uploadToBase`, {
@@ -445,6 +506,8 @@ export default {
     },
     watch: {
         async files() {
+            this.checkTokens()
+
             if(this.files.length) {
                 this.loadingData = true
 

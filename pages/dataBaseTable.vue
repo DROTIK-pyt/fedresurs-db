@@ -81,7 +81,62 @@ export default {
         }
     },
     methods: {
+        async checkTokens() {
+            let accessToken = localStorage.getItem("accessToken")
+            let sessionId = localStorage.getItem("sessionId")
+
+            if(accessToken && sessionId) {
+                const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/checkTokens`, {
+                    method: "POST",
+                    headers: {
+                        // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                        'Content-Type': 'application/json;charset=utf-8'
+                    },
+                    body: JSON.stringify({
+                        accessToken,
+                        sessionId
+                    })
+                })
+
+                const result = await data.json()
+
+                if(!result.ok) {
+                    let refreshToken = localStorage.getItem("refreshToken")
+
+                    if(refreshToken) {
+                        const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/refresh`, {
+                            method: "POST",
+                            headers: {
+                                // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                                'Content-Type': 'application/json;charset=utf-8'
+                            },
+                            body: JSON.stringify({
+                                refreshToken,
+                                sessionId
+                            })
+                        })
+
+                        const result = await data.json()
+                        if(result.ok) {
+                            localStorage.setItem("accessToken", result.accessToken)
+                            localStorage.setItem("refreshToken", result.refreshToken)
+                        } else {
+                            this.$router.push("/")
+                            return false
+                        }
+                    } else {
+                        this.$router.push("/")
+                        return false
+                    }
+                }
+            } else {
+                this.$router.push("/")
+                return false
+            }
+        },
         async getAllData() {
+            this.checkTokens()
+
             // Получить все возможные сущности
             let data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/entities`)
             const result = await data.json()
@@ -90,6 +145,8 @@ export default {
             this.allEntities = result.entities
         },
         async getAllDataFields(idCore) {
+            this.checkTokens()
+
             // Предварительно очистить заголовки
             this.headers = [{ text: 'Действия', value: 'actions', sortable: false },]
             this.entities = []
@@ -137,6 +194,8 @@ export default {
             })
         },
         async showEntity({idEntity}) {
+            this.checkTokens()
+
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/entityViaId`, {
                 method: "POST",
                 headers: {
@@ -152,6 +211,8 @@ export default {
             this.isOpenShowEntity = true
         },
         closeshowEntity() {
+            this.checkTokens()
+
             this.isOpenShowEntity = false
 
             this.theEntity = false
@@ -159,6 +220,8 @@ export default {
     },
     components: {theEntityVue},
     async beforeMount() {
+        this.checkTokens()
+        
         this.getAllData()
     },
 }

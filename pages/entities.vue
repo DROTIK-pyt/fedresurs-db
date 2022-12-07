@@ -130,7 +130,62 @@ export default {
     }),
     components: {},
     methods: {
+        async checkTokens() {
+            let accessToken = localStorage.getItem("accessToken")
+            let sessionId = localStorage.getItem("sessionId")
+
+            if(accessToken && sessionId) {
+                const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/checkTokens`, {
+                    method: "POST",
+                    headers: {
+                        // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                        'Content-Type': 'application/json;charset=utf-8'
+                    },
+                    body: JSON.stringify({
+                        accessToken,
+                        sessionId
+                    })
+                })
+
+                const result = await data.json()
+
+                if(!result.ok) {
+                    let refreshToken = localStorage.getItem("refreshToken")
+
+                    if(refreshToken) {
+                        const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/refresh`, {
+                            method: "POST",
+                            headers: {
+                                // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                                'Content-Type': 'application/json;charset=utf-8'
+                            },
+                            body: JSON.stringify({
+                                refreshToken,
+                                sessionId
+                            })
+                        })
+
+                        const result = await data.json()
+                        if(result.ok) {
+                            localStorage.setItem("accessToken", result.accessToken)
+                            localStorage.setItem("refreshToken", result.refreshToken)
+                        } else {
+                            this.$router.push("/")
+                            return false
+                        }
+                    } else {
+                        this.$router.push("/")
+                        return false
+                    }
+                }
+            } else {
+                this.$router.push("/")
+                return false
+            }
+        },
         async addField() {
+            this.checkTokens()
+
             this.errorAdded = ""
 
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/add-new-entity`, {
@@ -155,6 +210,8 @@ export default {
             this.getAllData()
         },
         async saveChanges() {
+            this.checkTokens()
+
             this.errorChanged = ""
 
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/cores`, {
@@ -174,6 +231,8 @@ export default {
             this.getAllData()
         },
         async deleteField({idCore}) {
+            this.checkTokens()
+
             await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/cores`, {
                 method: 'DELETE',
                 headers: {
@@ -187,6 +246,8 @@ export default {
             this.getAllData()
         },
         async getAllData() {
+            this.checkTokens()
+
             // Получить сущности
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/cores`)
             const fieldsOfComponies = await data.json()
@@ -204,7 +265,7 @@ export default {
             })
         }
     },
-    async beforeMount() {
+    async beforeMount() {        
         this.getAllData()
 
         this.loading = false
