@@ -66,6 +66,8 @@
 </template>
 
 <script>
+import { threadId } from 'worker_threads'
+
 const serverSetting = require('../../server/config/serverSetting.json')
 
 export default {
@@ -88,6 +90,8 @@ export default {
             localStorage.setItem("accessToken", null)
             localStorage.setItem("refreshToken", null)
             localStorage.setItem("sessionId", null)
+
+            this.$router.push("/")
         }
     }
 }
