@@ -66,8 +66,6 @@
 </template>
 
 <script>
-import { threadId } from 'worker_threads'
-
 const serverSetting = require('../../server/config/serverSetting.json')
 
 export default {
