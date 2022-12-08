@@ -34,6 +34,7 @@ app.use(express.static('static'))
 
 require('./routesDb/index')(app, upload, jwt) // Урлы запросов
 require('./auth/index')(app, upload, jwt) // Авторизация
+require('./api/index')(app, upload, jwt) // API
 
 app.listen(baseSettings.port, () => {
     console.log(`Server start on ${baseSettings.baseUrl}:${baseSettings.port}/`)
