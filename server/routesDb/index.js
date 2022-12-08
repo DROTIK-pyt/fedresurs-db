@@ -290,7 +290,11 @@ module.exports = function(app, upload, jwt) {
 
         let fieldsValues = await Scheme.typeOfField.findAll()
 
+        console.log("Начата конвертация xls 2 json.")
         const readFile = parser.parseXls2Json(req.originalSrc)
+        console.log("конвертация завершена.")
+        console.log("")
+
         readFile[0].forEach(field => {
             if(field['Сообщение:_дата'])
                 field['Сообщение:_дата'] = ExcelDateToJSDate(field['Сообщение:_дата']).toLocaleDateString()

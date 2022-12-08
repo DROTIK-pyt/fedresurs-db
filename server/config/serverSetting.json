@@ -1,4 +1,4 @@
 {
-    "baseUrl": "http://195.133.196.47",
+    "baseUrl": "http://localhost",
     "port": "8888"
 }
