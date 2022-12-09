@@ -1060,25 +1060,22 @@ module.exports = function(app, upload, jwt) {
 
     app.get('/testReq', async (req, res) => {
 
-        const array = [];
-            while (true) {
-            // увеличение массива на каждой итерации
-            array.push(new Array(10000000));
+        // const array = [];
+        //     while (true) {
+        //     // увеличение массива на каждой итерации
+        //     array.push(new Array(10000000));
+
+        //     const memory = process.memoryUsage();
+        //     console.log((memory.heapUsed / 1024 / 1024 / 1024).toFixed(4), 'GB');
+        // }
+        while (true) {
+            await Scheme.coreTypeOfField.findAll({
+                limit: 1
+            })
 
             const memory = process.memoryUsage();
-            console.log((memory.heapUsed / 1024 / 1024 / 1024).toFixed(4), 'GB');
+            console.log((memory.heapUsed / 1024 / 1024).toFixed(4), 'Mb');
         }
-        // const data = await Scheme.core.findOne({
-        //     where: {
-        //         idCore: 1
-        //     },
-        //     include: {
-        //         model: Scheme.theCore,
-        //         include: {
-        //             model: Scheme.typeOfField
-        //         }
-        //     },
-        // })
 
         // res.json(data)
     })
