@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nuxt",
     "build": "nuxt build",
-    "start": "nuxt start",
+    "start": "nuxt start --max_old_space_size=2000 --optimize_for_size",
     "generate": "nuxt generate"
   },
   "dependencies": {
