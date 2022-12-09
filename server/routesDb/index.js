@@ -1065,7 +1065,9 @@ module.exports = function(app, upload, jwt) {
             },
             include: {
                 model: Scheme.theCore,
-                limit: 1000
+                include: {
+                    model: Scheme.typeOfField
+                }
             },
         })
 
