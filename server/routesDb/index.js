@@ -1059,18 +1059,27 @@ module.exports = function(app, upload, jwt) {
     })
 
     app.get('/testReq', async (req, res) => {
-        const data = await Scheme.core.findOne({
-            where: {
-                idCore: 1
-            },
-            include: {
-                model: Scheme.theCore,
-                include: {
-                    model: Scheme.typeOfField
-                }
-            },
-        })
 
-        res.json(data)
+        const array = [];
+            while (true) {
+            // увеличение массива на каждой итерации
+            array.push(new Array(10000000));
+
+            const memory = process.memoryUsage();
+            console.log((memory.heapUsed / 1024 / 1024 / 1024).toFixed(4), 'GB');
+        }
+        // const data = await Scheme.core.findOne({
+        //     where: {
+        //         idCore: 1
+        //     },
+        //     include: {
+        //         model: Scheme.theCore,
+        //         include: {
+        //             model: Scheme.typeOfField
+        //         }
+        //     },
+        // })
+
+        // res.json(data)
     })
 }
