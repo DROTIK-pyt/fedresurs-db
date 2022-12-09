@@ -1069,7 +1069,9 @@ module.exports = function(app, upload, jwt) {
         //     console.log((memory.heapUsed / 1024 / 1024 / 1024).toFixed(4), 'GB');
         // }
         setInterval(async () => {
-            await Scheme.coreTypeOfField.findAll()
+            await Scheme.coreTypeOfField.findAll({
+                limit: 100000
+            })
 
             const memory = process.memoryUsage()
             console.log((memory.heapUsed / 1024 / 1024).toFixed(4), 'Mb')
