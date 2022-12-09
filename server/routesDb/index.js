@@ -1069,14 +1069,12 @@ module.exports = function(app, upload, jwt) {
         //     console.log((memory.heapUsed / 1024 / 1024 / 1024).toFixed(4), 'GB');
         // }
         setInterval(async () => {
-            await Scheme.coreTypeOfField.findAll({
-                limit: 10000,
-            })
+            await Scheme.coreTypeOfField.findAll()
 
             const memory = process.memoryUsage()
             console.log((memory.heapUsed / 1024 / 1024).toFixed(4), 'Mb')
 
-        }, 400)
+        }, 1000)
 
         // res.json(data)
     })
