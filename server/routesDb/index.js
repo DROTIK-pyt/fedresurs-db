@@ -1071,7 +1071,7 @@ module.exports = function(app, upload, jwt) {
         let max = 0
         setInterval(async () => {
             await Scheme.coreTypeOfField.findAll({
-                limit: 2000
+                limit: 4000
             })
 
             const memory = process.memoryUsage()
