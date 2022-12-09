@@ -1071,7 +1071,7 @@ module.exports = function(app, upload, jwt) {
         let max = 0
         setInterval(async () => {
             await Scheme.coreTypeOfField.findAll({
-                limit: 100000
+                limit: 1000*2
             })
 
             const memory = process.memoryUsage()
@@ -1080,7 +1080,7 @@ module.exports = function(app, upload, jwt) {
             }
             console.log(`Max heap used: ${max}`, 'Mb')
 
-        }, 3000)
+        }, 2000)
 
         // res.json(data)
     })
