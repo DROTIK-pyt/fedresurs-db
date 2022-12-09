@@ -49,13 +49,18 @@
             @closeFilter="closeFilter"
             v-if="isShow"
         ></filter2fields>
-        {{ cores }}
+        <errorMsgVue
+            :isShowMsg="isShowError"
+            :msgText="errorMsg"
+            @closeErrorMsg="isShowError = false; errorMsg = ''"
+        ></errorMsgVue>
     </v-row>
 </template>
 
 <script>
 const serverSetting = require('../server/config/serverSetting.json')
 import filter2fields from '../components/filter2fields.vue'
+import errorMsgVue from '../components/errorMsg.vue'
 
 export default {
     data: () => ({
@@ -66,8 +71,11 @@ export default {
         loading: true,
 
         filters: [],
+
+        isShowError: false,
+        errorMsg: "",
     }),
-    components: {filter2fields},
+    components: {filter2fields, errorMsgVue},
     methods: {
         async checkTokens() {
             let accessToken = localStorage.getItem("accessToken")
@@ -132,6 +140,20 @@ export default {
         async exportToExcel() {
             this.checkTokens()
 
+            let isExportReady = false
+            this.cores.forEach(aCore => {
+                if(aCore.exportField.length > 0) {
+                    isExportReady = true
+                    return
+                }
+            })
+            if(!isExportReady) {
+                this.isShowError = true
+                this.errorMsg = "Выберите поля для выгрузки."
+
+                return
+            }
+
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel`, {
                 method: "POST",
                 headers: {
@@ -174,6 +196,8 @@ export default {
         },
         async getFieldsExport() {
             this.checkTokens()
+
+
 
             const dataTypeOfField = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsValuesExport`)
             const resultTypeOfField = await dataTypeOfField.json()

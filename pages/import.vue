@@ -277,7 +277,11 @@
             </v-col>
         </v-row>
         </v-col>
-        {{ fieldsSystem }}
+        <errorMsgVue
+            :isShowMsg="isShowError"
+            :msgText="errorMsg"
+            @closeErrorMsg="isShowError = false; errorMsg = ''"
+        ></errorMsgVue>
     </v-row>
 </template>
 
@@ -286,6 +290,7 @@ const serverSetting = require('../server/config/serverSetting.json')
 const { v4: uuidv4 } = require('uuid')
 
 import draggable from 'vuedraggable'
+import errorMsgVue from '../components/errorMsg.vue'
 
 export default {
     name: "PageUploads",
@@ -305,6 +310,9 @@ export default {
         drag: false,
         loadingData: false,
         loading2base: false,
+
+        isShowError: false,
+        errorMsg: "",
 
         // Подготовить вывод действий на случай совпадения полей сущности
         whatDoWeDo: [
@@ -449,13 +457,19 @@ export default {
                         action: "skip"
                     })
                     result.fieldsValues.forEach(field => {
-                        this.fieldsSystem[index].fields.push({
-                            item: [],
-                            name: field.name,
-                            tag: field.tag,
-                            idTypeOfField: field.idTypeOfField,
-                            type: field.classOfField.name
-                        })
+                        let types = []
+                        field.cores.forEach(c => types.push(c.idCore))
+
+                        if(types.indexOf(this.fieldsSystem[index].idCore) > -1) {
+                            this.fieldsSystem[index].fields.push({
+                                item: [],
+                                name: field.name,
+                                tag: field.tag,
+                                idTypeOfField: field.idTypeOfField,
+                                type: field.classOfField.name,
+                                core2type: types,
+                            })
+                        }
                     })
                 })
             }
@@ -473,6 +487,15 @@ export default {
             this.checkTokens()
 
             this.loading2base = true
+
+            if(!localStorage.getItem('uniqueSuffix')) {
+                this.loading2base = false
+                
+                this.isShowError = true
+                this.errorMsg = "Файл не был загружен. Очистите кеш, загрузите файл и повторите попытку."
+
+                return
+            }
 
             const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/uploadToBase`, {
                 method: "POST",
@@ -493,7 +516,7 @@ export default {
                 this.loading2base = false
         },
     },
-    components: {draggable},
+    components: {draggable, errorMsgVue},
     computed: {
         dragOptions() {
             return {

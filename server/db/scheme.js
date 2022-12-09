@@ -159,6 +159,9 @@ theCore.hasMany(multiField)
 multiField.belongsTo(typeOfField)
 typeOfField.hasMany(multiField)
 
+core.belongsToMany(typeOfField, {through: "core2Types", uniqueKey: "core2TypesUnique"})
+typeOfField.belongsToMany(core, {through: "core2Types", uniqueKey: "core2TypesUnique"})
+
 const Scheme = {
   core,
   theCore,

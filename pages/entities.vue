@@ -16,6 +16,8 @@
                     dark
                     color="indigo"
                     class="mr-3"
+                    :loading="loading2addEntity"
+                    :disabled="loading2addEntity"
                     @click="addField"
                 >
                     Добавить
@@ -49,6 +51,8 @@
                     dark
                     color="indigo"
                     class="mr-3"
+                    :loading="loading2saveEntity"
+                    :disabled="loading2saveEntity"
                     @click="saveChanges"
                 >
                     Сохранить
@@ -127,6 +131,9 @@ export default {
         loading: true,
 
         showInTable: false,
+
+        loading2addEntity: false,
+        loading2saveEntity: false,
     }),
     components: {},
     methods: {
@@ -170,20 +177,28 @@ export default {
                             localStorage.setItem("accessToken", result.accessToken)
                             localStorage.setItem("refreshToken", result.refreshToken)
                         } else {
+                            this.loading2addEntity = false
+                            this.loading2saveEntity = false
                             this.$router.push("/")
                             return false
                         }
                     } else {
+                        this.loading2addEntity = false
+                        this.loading2saveEntity = false
                         this.$router.push("/")
                         return false
                     }
                 }
             } else {
+                this.loading2addEntity = false
+                this.loading2saveEntity = false
                 this.$router.push("/")
                 return false
             }
         },
         async addField() {
+            this.loading2addEntity = true
+
             this.checkTokens()
 
             this.errorAdded = ""
@@ -208,8 +223,12 @@ export default {
             this.showInTable = false
 
             this.getAllData()
+
+            this.loading2addEntity = false
         },
         async saveChanges() {
+            this.loading2saveEntity = true
+
             this.checkTokens()
 
             this.errorChanged = ""
@@ -229,6 +248,8 @@ export default {
             }
 
             this.getAllData()
+
+            this.loading2saveEntity = false
         },
         async deleteField({idCore}) {
             this.checkTokens()

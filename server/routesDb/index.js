@@ -112,7 +112,7 @@ module.exports = function(app, upload, jwt) {
     })
 
     app.post('/add-new-field', async (req, res) => {
-        const { newFieldName, class2field } = req.body
+        const { newFieldName, class2field, cores2type } = req.body
 
         if (newFieldName != "") {
             const foundFields = await Scheme.typeOfField.findAll({
@@ -131,6 +131,20 @@ module.exports = function(app, upload, jwt) {
                         type: class2field
                     }
                 })
+                const aCores = await Scheme.core.findAll({
+                    where: {
+                        idCore: {
+                            [Op.in]: cores2type
+                        }
+                    }
+                })
+                if(aCores) {
+                    for(let c = 0; c < aCores.length; c++) {
+                        let aCore = aCores[c]
+
+                        TOF.addCore(aCore)
+                    }
+                }
 
                 if(c2f) c2f.addTypeOfField(TOF)
             } else {
@@ -192,6 +206,9 @@ module.exports = function(app, upload, jwt) {
                 const TOF = await Scheme.typeOfField.findOne({
                     where: {
                         tag: cyrillicToTranslit.transform(field.name, '-').toLowerCase()
+                    },
+                    include: {
+                        model: Scheme.core
                     }
                 })
                 const c2f = await Scheme.classOfField.findOne({
@@ -199,6 +216,24 @@ module.exports = function(app, upload, jwt) {
                         type: field.classOfField
                     },
                 })
+
+                const aCores = await Scheme.core.findAll({
+                    where: {
+                        idCore: {
+                            [Op.in]: field.cores
+                        }
+                    }
+                })
+
+                console.log({cores: field.cores})
+
+                await TOF.setCores(null)
+
+                for(let c = 0; c < aCores.length; c++) {
+                    let aCore = aCores[c]
+
+                    TOF.addCore(aCore)
+                }
 
                 if(c2f) {
                     await c2f.addTypeOfField(TOF)
@@ -310,12 +345,17 @@ module.exports = function(app, upload, jwt) {
 
     app.get('/fieldsValues', async (req, res) => {
         const fieldsValues = await Scheme.typeOfField.findAll({
-            include: Scheme.classOfField
+            include: [Scheme.classOfField, Scheme.core]
         })
+
+        // res.json(fieldsValues)
+        // return
+
+        const cores = await Scheme.core.findAll()
 
         const class2fields = await Scheme.classOfField.findAll()
 
-        res.json({ok: true, fieldsValues, class2fields})
+        res.json({ok: true, fieldsValues, class2fields, cores})
     })
 
     app.get('/fieldsValuesExport', async (req, res) => {
@@ -991,22 +1031,7 @@ module.exports = function(app, upload, jwt) {
         // res.json(result)
     })
 
-    app.get('/test', async (req, res) => {
-        const test = await Scheme.core.findAll({
-            where: {
-                idCore: 1
-            },
-            include: {
-                model: Scheme.theCore,
-                where: {
-                    idTheCore: {
-                        [Op.in]: [1,2,3,4],
-                    }
-                }
-            }
-        })
-
-        res.json(test)
-        return
+    app.get('/testServer', async (req, res) => {
+        res.json({ok: true, msg: "Server is running."})
     })
 }

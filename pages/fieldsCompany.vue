@@ -16,6 +16,8 @@
                     dark
                     color="indigo"
                     class="mr-3"
+                    :loading="loading2addField"
+                    :disabled="loading2addField"
                     @click="addField"
                 >
                     Добавить
@@ -32,6 +34,15 @@
                     item-value="type"
                     label="Класс поля"
                     v-model="class2field"
+                    solo
+                ></v-select>
+                <v-select
+                    :items="cores2types"
+                    item-text="name"
+                    item-value="idCore"
+                    multiple
+                    label="К чему относится"
+                    v-model="cores2type"
                     solo
                 ></v-select>
                 <v-text-field
@@ -53,6 +64,8 @@
                     dark
                     color="indigo"
                     class="mr-3"
+                    :loading="loading2save"
+                    :disabled="loading2save"
                     @click="saveChanges"
                 >
                     Сохранить
@@ -77,6 +90,16 @@
                     
                     >
                         <div class="d-flex justify-space-between align-end">
+                            <v-select
+                                :items="cores2types"
+                                item-text="name"
+                                v-model="fieldsOfCompony.cores"
+                                item-value="idCore"
+                                multiple
+                                label="К чему относится"
+                                class="mr-4 small"
+                                solo
+                            ></v-select>
                             <v-select
                                 :items="classOfFields"
                                 item-text="name"
@@ -146,7 +169,12 @@ export default {
         toDelete: false,
         loading: true,
         classOfFields: [],
+        cores2types: [],
         class2field: "",
+        cores2type: "",
+
+        loading2save: false,
+        loading2addField: false,
 
         disabledBtnSave: true,
     }),
@@ -192,20 +220,28 @@ export default {
                             localStorage.setItem("accessToken", result.accessToken)
                             localStorage.setItem("refreshToken", result.refreshToken)
                         } else {
+                            this.loading2save = false
+                            this.loading2addField = false
                             this.$router.push("/")
                             return false
                         }
                     } else {
+                        this.loading2save = false
+                        this.loading2addField = false
                         this.$router.push("/")
                         return false
                     }
                 }
             } else {
+                this.loading2save = false
+                this.loading2addField = false
                 this.$router.push("/")
                 return false
             }
         },
         async addField() {
+            this.loading2addField = true
+
             this.checkTokens()
 
             this.errorAdded = ""
@@ -217,7 +253,8 @@ export default {
                 },
                 body: JSON.stringify({
                     newFieldName: this.newFieldName,
-                    class2field: this.class2field
+                    class2field: this.class2field,
+                    cores2type: this.cores2type
                 })
             })
 
@@ -229,8 +266,12 @@ export default {
             this.newFieldName = ""
 
             this.getAllData()
+
+            this.loading2addField = false
         },
         async saveChanges() {
+            this.loading2save = true
+
             this.checkTokens()
 
             this.errorChanged = ""
@@ -250,6 +291,8 @@ export default {
             }
 
             this.getAllData()
+
+            this.loading2save = false
         },
         async deleteField(tag) {
             this.checkTokens()
@@ -279,13 +322,18 @@ export default {
 
             fieldsOfComponies.fieldsValues.forEach(field => {
                 // console.log(field.classOfField?.type)
+                console.log({cores: field.cores, name: field.name})
+
+                let cores = []
+                field.cores.forEach(aCore => cores.push(aCore.idCore))
 
                 this.fieldsOfComponiesData.unshift({
                     name: field.name,
                     tag: field.tag,
                     showInColumnTable: field.showInColumnTable,
                     showInFilter: field.showInFilter,
-                    classOfField: field.classOfField?.type ? field.classOfField?.type : "universal"
+                    classOfField: field.classOfField?.type ? field.classOfField?.type : "universal",
+                    cores,
                 })
             })
 
@@ -293,6 +341,13 @@ export default {
                 this.classOfFields.push({
                     name: c2f.name,
                     type: c2f.type,
+                })
+            })
+
+            fieldsOfComponies.cores.forEach(aCore => {
+                this.cores2types.push({
+                    name: aCore.name,
+                    idCore: aCore.idCore,
                 })
             })
         }
@@ -307,7 +362,10 @@ export default {
 
 <style scoped>
 .v-select {
-    max-width: 400px;
+    max-width: 330px;
+}
+.v-select.small {
+    max-width: 190px;
 }
 .lds-ring {
   display: inline-block;

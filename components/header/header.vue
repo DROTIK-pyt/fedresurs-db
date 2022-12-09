@@ -62,36 +62,72 @@
                 </v-btn>
             </nav>
         </v-col>
+        <clarifyingVue
+            :isShowMsg="isShowMsg"
+            @confirm="isConfirmed = true; isAnswered = true"
+            @cancel="isConfirmed = false; isAnswered = true"
+        ></clarifyingVue>
     </v-row>
 </template>
 
 <script>
 const serverSetting = require('../../server/config/serverSetting.json')
+import clarifyingVue from '../clarifying.vue'
 
 export default {
+    data: () => ({
+        isShowMsg: false,
+        isConfirmed: false,
+        isAnswered: false
+    }),
     methods: {
         async logout() {
-            const sessionId = localStorage.getItem("sessionId")
-            if(sessionId) {
-                await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/logout`, {
-                    method: "POST",
-                    headers: {
-                        // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
-                        'Content-Type': 'application/json;charset=utf-8'
-                    },
-                    body: JSON.stringify({
-                        sessionId
+            const actionUser = new Promise((resolve, reject) => {
+                this.isShowMsg = true
+
+                const idTimeout = setTimeout(() => {
+                    this.isShowMsg = false
+
+                    reject()
+                }, 20*1000)
+
+                const idInterval = setInterval(() => {
+                    if(this.isAnswered) {
+                        clearTimeout(idTimeout)
+                        clearInterval(idInterval)
+
+                        this.isShowMsg = false
+                        if(this.isConfirmed) resolve()
+                        else reject()
+                    }
+                }, 200)
+            })
+
+            actionUser
+            .then(async () => {
+                const sessionId = localStorage.getItem("sessionId")
+                if(sessionId) {
+                    await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/logout`, {
+                        method: "POST",
+                        headers: {
+                            // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: JSON.stringify({
+                            sessionId
+                        })
                     })
-                })
-            }
+                }
 
-            localStorage.setItem("accessToken", null)
-            localStorage.setItem("refreshToken", null)
-            localStorage.setItem("sessionId", null)
+                localStorage.setItem("accessToken", null)
+                localStorage.setItem("refreshToken", null)
+                localStorage.setItem("sessionId", null)
 
-            this.$router.push("/")
+                this.$router.push("/")
+            })
         }
-    }
+    },
+    components: {clarifyingVue},
 }
 </script>
 
