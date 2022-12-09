@@ -1063,12 +1063,9 @@ module.exports = function(app, upload, jwt) {
             where: {
                 idCore: 1
             },
-            limit: 10000,
             include: {
                 model: Scheme.theCore,
-                include: {
-                    model: Scheme.typeOfField
-                }
+                limit: 1000
             },
         })
 
