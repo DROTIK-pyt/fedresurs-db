@@ -1068,7 +1068,7 @@ module.exports = function(app, upload, jwt) {
         //     const memory = process.memoryUsage();
         //     console.log((memory.heapUsed / 1024 / 1024 / 1024).toFixed(4), 'GB');
         // }
-        setInterval(async () => {
+        while(true) {
             await Scheme.theCore.findAll({
                 limit: 1,
                 include: {
@@ -1081,7 +1081,7 @@ module.exports = function(app, upload, jwt) {
 
             const memory = process.memoryUsage();
             console.log((memory.heapUsed / 1024 / 1024).toFixed(4), 'Mb');
-        }, 400)
+        }
 
         // res.json(data)
     })
