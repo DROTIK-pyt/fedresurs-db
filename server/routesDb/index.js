@@ -11,6 +11,10 @@ const cache = []
 
 const sessions = []
 
+let currentSuffix = ""
+let lengthDocument = 0
+let wrote2base = 0
+
 const actions = require("../config/importActions.json")
 const classesFields = require("../config/fieldsClass.json")
 
@@ -33,7 +37,15 @@ function ExcelDateToJSDate(serial) {
     return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
  }
 
+ var rounded = function(number){
+    return +number.toFixed(4);
+}
+
 module.exports = function(app, upload, jwt) {
+    app.get('/percentUploaded', async (req, res) => {
+        res.json({ ok: true, perCent: rounded(wrote2base/lengthDocument)*100, lengthDocument, wrote2base })
+    })
+
     app.post('/field', async (req, res) => {
         const { idEntity } = req.body
 
@@ -102,7 +114,9 @@ module.exports = function(app, upload, jwt) {
     })
 
     app.get('/entities', async (req, res) => {
-        const data = await Scheme.core.findAll({
+        let data = []
+                
+        data = await Scheme.core.findAll({
             where: {
                 showInTable: true
             }
@@ -487,6 +501,7 @@ module.exports = function(app, upload, jwt) {
 
     app.post('/uploadToBase', async(req, res) => {
         const { uniqueSuffix, file2field, relations } = req.body
+
         let prepareRelations = []
         let aCore
         let newTheCore
@@ -495,6 +510,8 @@ module.exports = function(app, upload, jwt) {
         // return
 
         const readFile = cache.find(c => c.id === uniqueSuffix).readFile[0]
+        currentSuffix = uniqueSuffix
+        lengthDocument = readFile.length - 1
 
         // res.json(readFile)
 
@@ -553,6 +570,8 @@ module.exports = function(app, upload, jwt) {
         // return
 
         for(let i = 0; i < readFile.length; i++) {
+            wrote2base = i
+
             let fileItem = readFile[i]
             prepareRelations[i] = []
             // res.json(wasOverlaped)
@@ -791,6 +810,10 @@ module.exports = function(app, upload, jwt) {
         console.log()
         console.log('success')
         console.log()
+
+        lengthDocument = 0
+        wrote2base = 0
+        currentSuffix = ""
 
         res.json({ok: true})
     })

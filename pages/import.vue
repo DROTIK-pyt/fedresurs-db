@@ -53,6 +53,9 @@
                     >
                         Загрузить в базу
                     </v-btn>
+                    <span>
+                        Загружено: {{ perCentUploaded }}
+                    </span>
                     <v-spacer></v-spacer>
                 </v-col>
             </v-row>
@@ -314,6 +317,8 @@ export default {
         isShowError: false,
         errorMsg: "",
 
+        perCentUploaded: "",
+
         // Подготовить вывод действий на случай совпадения полей сущности
         whatDoWeDo: [
             {
@@ -337,6 +342,14 @@ export default {
         relations: [],
     }),
     methods: {
+        async perCentUploadedData() {
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/percentUploaded`)
+            const result = await data.json()
+
+            if(result.ok) {
+                this.perCentUploaded = `${result.perCent}%`
+            }
+        },
         async checkTokens() {
             let accessToken = localStorage.getItem("accessToken")
             let sessionId = localStorage.getItem("sessionId")
@@ -486,6 +499,10 @@ export default {
         async uploadToBase() {
             this.checkTokens()
 
+            // const checkPerCentIntervalId = setInterval(async () => {
+            //     this.perCentUploadedData()
+            // }, 500)
+
             this.loading2base = true
 
             if(!localStorage.getItem('uniqueSuffix')) {
@@ -493,6 +510,7 @@ export default {
                 
                 this.isShowError = true
                 this.errorMsg = "Файл не был загружен. Очистите кеш, загрузите файл и повторите попытку."
+                clearInterval(checkPerCentIntervalId)
 
                 return
             }
@@ -514,6 +532,8 @@ export default {
 
             if(result.ok)
                 this.loading2base = false
+
+            clearInterval(checkPerCentIntervalId)
         },
     },
     components: {draggable, errorMsgVue},
