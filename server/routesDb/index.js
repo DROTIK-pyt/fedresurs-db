@@ -1057,4 +1057,21 @@ module.exports = function(app, upload, jwt) {
     app.get('/testServer', async (req, res) => {
         res.json({ok: true, msg: "Server is running."})
     })
+
+    app.get('/testReq', async (req, res) => {
+        const data = await Scheme.core.findOne({
+            where: {
+                idCore: 1
+            },
+            limit: 10000,
+            include: {
+                model: Scheme.theCore,
+                include: {
+                    model: Scheme.typeOfField
+                }
+            },
+        })
+
+        res.json(data)
+    })
 }
