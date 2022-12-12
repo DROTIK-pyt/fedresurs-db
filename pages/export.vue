@@ -13,7 +13,7 @@
                 depressed
                 color="success"
                 @click="showFilters"
-                :loading="loading"
+                :loading="loadingFilters"
                 :disabled="loading"
             >
                 Фильтры
@@ -23,7 +23,7 @@
             <h2>{{ entity.name }}</h2>
             <v-select
                 v-model="entity.exportField"
-                :items="fields[index]"
+                :items="fields[index]?.allFields"
                 :loading="loading"
                 label="Поля"
                 item-text="name"
@@ -69,6 +69,7 @@ export default {
         fieldsInFilter: [],
         isShow: false,
         loading: true,
+        loadingFilters: true,
 
         filters: [],
 
@@ -197,15 +198,23 @@ export default {
         async getFieldsExport() {
             this.checkTokens()
 
-
-
             const dataTypeOfField = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsValuesExport`)
             const resultTypeOfField = await dataTypeOfField.json()
 
             if(resultTypeOfField.ok) {
                 this.fields = resultTypeOfField.fieldsValues
-                this.fieldsInFilter = resultTypeOfField.fieldsValuesExport
             }
+
+            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`)
+            .then(data => data.json())
+            .then(values => {
+                this.fieldsInFilter = values
+
+                this.loadingFilters = false
+            })
+            .catch(() => {
+                this.loadingFilters = false
+            })
 
             this.loading = false
         },

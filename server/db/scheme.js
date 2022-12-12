@@ -48,7 +48,7 @@ const core2core = sequelize.define('core2core', {
     type: DataTypes.INTEGER,
     allowNull: false
   },
-})
+}, { timestamps: false })
 
 const typeOfField = sequelize.define('typeOfField', {
   idTypeOfField: {
@@ -75,14 +75,14 @@ const typeOfField = sequelize.define('typeOfField', {
     allowNull: false,
     defaultValue: true,
   }
-})
+}, { timestamps: false })
 
 const coreTypeOfField = sequelize.define('coreTypeOfField', {
   value: {
     type: DataTypes.TEXT('LONG'),
     allowNull: false,
   }
-})
+}, { timestamps: false })
 
 const multiField = sequelize.define('multiField', {
   idMultiField: {
@@ -114,7 +114,7 @@ const classOfField = sequelize.define('classOfField', {
     allowNull: false,
     defaultValue: 'universal'
   }
-})
+}, { timestamps: false })
 
 const user = sequelize.define("user", {
   idUser: {

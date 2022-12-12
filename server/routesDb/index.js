@@ -373,73 +373,25 @@ module.exports = function(app, upload, jwt) {
     })
 
     app.get('/fieldsValuesExport', async (req, res) => {
-        const cores = await Scheme.core.findAll({
-            include: {
-                model: Scheme.theCore,
-                include: {
-                    model: Scheme.typeOfField
-                }
-            }
-        })
+        const cores = await Scheme.core.findAll()
 
         let fieldsValues = []
 
         for(let i = 0; i < cores.length; i++) {
             let core = cores[i]
+            const fields = await core.getTypeOfFields()
+
             fieldsValues.push({
                 idCore: core.idCore,
-                fields: [],
+                name: core.name,
+                allFields: fields
             })
-
-            for(let j = 0; j < core.theCores.length; j++) {
-                let aTheCore = core.theCores[j]
-
-                for(let k = 0; k < aTheCore.typeOfFields.length; k++) {
-                    let field = aTheCore.typeOfFields[k]
-
-                    fieldsValues[i].fields.push({
-                        idTypeOfField: field.idTypeOfField,
-                        name: field.name
-                    })
-                }
-            }
         }
 
-        let result = []
-        let uniq = []
+        res.json({ok: true, fieldsValues})
+    })
 
-        for(let i = 0; i < fieldsValues.length; i++) {
-            let fields = fieldsValues[i].fields
-            uniq[i] = []
-            result[i] = []
-
-            for(let j = 0; j < fields.length; j++) {
-                let field = fields[j]
-
-                if(uniq[i].indexOf(field.idTypeOfField) === -1) {
-                    uniq[i].push(field.idTypeOfField)
-                }
-            }
-        }
-
-        for(let i = 0; i < fieldsValues.length; i++) {
-            let fields = fieldsValues[i].fields
-
-            for(let j = 0; j < fields.length; j++) {
-                let field = fields[j]
-
-                for(let u = 0; u < uniq[i].length; u++) {
-                    let index = uniq[i].indexOf(field.idTypeOfField)
-
-                    if(index > -1) {
-                        result[i].push(field)
-                        uniq[i] = uniq[i].filter(elem => elem != field.idTypeOfField)
-                        break
-                    }
-                }
-            }
-        }
-
+    app.get('/fieldsExport', async (req, res) => {
         const aTheCore = await Scheme.core.findAll({
             include: {
                 model: Scheme.theCore,
@@ -457,7 +409,7 @@ module.exports = function(app, upload, jwt) {
             }
         })
 
-        res.json({ok: true, fieldsValues: result, fieldsValuesExport: aTheCore})
+        res.json(aTheCore)
     })
 
     app.get('/cores', async (req, res) => {
