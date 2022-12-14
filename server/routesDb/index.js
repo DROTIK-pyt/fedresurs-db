@@ -62,33 +62,74 @@ module.exports = function(app, upload, jwt) {
     })
 
     app.post('/fields', async (req, res) => {
+        const { page, idCore, max } = req.body
+        let limit = 100
+        let offset = limit * page - limit
+
+        if(max < 0) {
+            res.json({ok: false, fields: {}})
+            return
+        }
+
+        console.log({offset, page})
+        if (offset >= max) {
+            res.json({ok: false, fields: {}})
+            return
+        }
+
+        const data = await Scheme.core.findOne({
+            where: {
+                idCore
+            },
+        })
+
+        const theCores = await data.getTheCores({
+            limit,
+            offset,
+            include: [{
+                model: Scheme.typeOfField,
+            }]
+        })
+
+        if(theCores.length) {
+            res.json({ok: true, fields: {theCores}})
+            return
+        }
+        res.json({ok: false, fields: {}})
+        return
+    })
+
+    app.post('/allHeaders', async (req, res) => {
         const { idCore } = req.body
 
         const data = await Scheme.core.findOne({
             where: {
                 idCore
             },
-            include: {
-                model: Scheme.theCore,
-                include: {
-                    model: Scheme.typeOfField
-                }
-            },
+        })
+
+        const theCores = await data.getTheCores({
+            limit: 1,
+            include: [{
+                model: Scheme.typeOfField,
+            }]
         })
 
         const heading = []
 
-        if(data?.theCores.length) {
-            data.theCores[0].typeOfFields.forEach(field => {
+        if(theCores.length) {
+            theCores[0].typeOfFields.forEach(field => {
                 heading.push({
                     name: field.name,
                     tag: field.tag,
                     showInColumnTable: field.showInColumnTable
                 })
             })
-            res.json({ok: true, fields: data, headers: heading})
+            res.json({ok: true, headers: heading})
+            return
         } else {
-            res.json({ok: true, fields: data})
+            res.json({ok: false})
+            return
         }
     })
 
@@ -419,10 +460,13 @@ module.exports = function(app, upload, jwt) {
             return
         }
 
-        if(offset >= max) {
+        if(offset >= max && page == 1) {
             offset = 0
             limit = max
             isOfssetAboveMax = true
+        } else if(offset >= max && page > 1) {
+            res.json({items: []})
+            return
         }
 
         const aCore = await Scheme.core.findOne({
@@ -458,6 +502,23 @@ module.exports = function(app, upload, jwt) {
         }
 
         res.json({items: []})
+    })
+
+    app.post('/fieldsCount', async (req, res) => {
+        const { idCore } = req.body
+
+        const aCore = await Scheme.core.findOne({
+            where: {
+                idCore
+            }
+        })
+
+        if(aCore) {
+            const max = await aCore.countTheCores()
+            res.json(max)
+            return
+        }
+        res.json(-1)
     })
 
     app.get('/cores', async (req, res) => {

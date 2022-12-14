@@ -75,6 +75,13 @@ export default {
     }),
     watch: {
         entity() {
+            // Предварительно очистить заголовки
+            this.headers = [{ text: 'Действия', value: 'actions', sortable: false },]
+            this.entities = []
+
+            // console.log(this.entity)
+
+            this.getAllHeaders(this.entity)
             this.getAllDataFields(this.entity)
 
             this.search = ""
@@ -144,53 +151,86 @@ export default {
             // Вставить сущности в выпадающее поле
             this.allEntities = result.entities
         },
-        async getAllDataFields(idCore) {
-            this.checkTokens()
-
-            // Предварительно очистить заголовки
-            this.headers = [{ text: 'Действия', value: 'actions', sortable: false },]
-            this.entities = []
-
-            // Получить поля сущности для таблицы
-            let data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
+        async getAllHeaders(idCore) {
+            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/allHeaders`, {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
                 },
                 body: JSON.stringify({
-                    idCore
+                    idCore,
                 })
             })
-            const semiFields = await data.json()
-
-            // Вставить поля в header
-            semiFields.headers.forEach(field => {
-                if(field.showInColumnTable) {
-                    this.headers.unshift({
-                        text: `${field.name}`,
-                        value: `${field.tag}`,
-                        sortable: false
-                    }) 
-                }
-            })
-
-            // Получить данные сущности по столбцам
-            const entities = semiFields.fields
-
-            // Вставить данные сущности
-            let elem = {}
-
-            entities.theCores.forEach(entity => {
-                entity.typeOfFields.forEach(field => {
-                    if(field.coreTypeOfField.value) {
-                        elem[`${field.tag}`] = field.coreTypeOfField.value
-                    } else {
-                        elem[`${field.tag}`] = "Нет данных"
+            .then(d => d.json())
+            .then(semiFields => {
+                // Вставить поля в header
+                semiFields.headers.forEach(field => {
+                    if(field.showInColumnTable) {
+                        this.headers.unshift({
+                            text: `${field.name}`,
+                            value: `${field.tag}`,
+                            sortable: false
+                        }) 
                     }
                 })
-                elem['idEntity'] = entity.idTheCore
-                this.entities.push(elem)
-                elem = {}
+            })
+        },
+        async getAllDataFields(idCore, page = 1) {
+            this.checkTokens()
+
+            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8',
+                },
+                body: JSON.stringify({
+                    idCore,
+                })
+            })
+            .then(d => d.json())
+            .then(max => {
+                console.log(max)
+
+                fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json;charset=utf-8',
+                    },
+                    body: JSON.stringify({
+                        idCore,
+                        page,
+                        max
+                    })
+                })
+                .then(data => data.json())
+                .then(semiFields => {
+
+                    if(!semiFields.ok) {
+                        return
+                    }
+
+                    // Получить данные сущности по столбцам
+                    const entities = semiFields.fields
+
+                    // Вставить данные сущности
+                    let elem = {}
+
+                    entities.theCores.forEach(entity => {
+                        entity.typeOfFields.forEach(field => {
+                            if(field.coreTypeOfField.value) {
+                                elem[`${field.tag}`] = field.coreTypeOfField.value
+                            } else {
+                                elem[`${field.tag}`] = "Нет данных"
+                            }
+                        })
+                        elem['idEntity'] = entity.idTheCore
+                        this.entities.push(elem)
+                        elem = {}
+                    })
+
+                    page++
+                    this.getAllDataFields(idCore, page)
+                })
             })
         },
         async showEntity({idEntity}) {
