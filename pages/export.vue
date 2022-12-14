@@ -75,8 +75,15 @@ export default {
 
         isShowError: false,
         errorMsg: "",
+
+        idInterval: null,
     }),
     components: {filter2fields, errorMsgVue},
+    watch: {
+        fieldsInFilter() {
+            console.log(this.fieldsInFilter)
+        },
+    },
     methods: {
         async checkTokens() {
             let accessToken = localStorage.getItem("accessToken")
@@ -196,52 +203,54 @@ export default {
             }
         },
         async getFieldsExportByPage(page = 1, idCore = 1) {
-            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
-                method: "POST",
-                headers: {
-                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
-                    'Content-Type': 'application/json;charset=utf-8'
-                },
-                body: JSON.stringify({
-                    idCore
-                })
-            })
-            .then(result => result.json())
-            .then(max => {
-                fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`, {
+            this.idInterval = setInterval(() => {
+                fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
                     method: "POST",
                     headers: {
                         // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
                         'Content-Type': 'application/json;charset=utf-8'
                     },
                     body: JSON.stringify({
-                        page,
-                        idCore,
-                        max
+                        idCore
                     })
                 })
-                .then(data => data.json())
-                .then(values => {
-                    if(values?.items?.length > 0 && !values.isOfssetAboveMax) {
-                        if(page == 1) this.fieldsInFilter[idCore] = []
+                .then(result => result.json())
+                .then(max => {
+                    fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`, {
+                        method: "POST",
+                        headers: {
+                            // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: JSON.stringify({
+                            page,
+                            idCore,
+                            max
+                        })
+                    })
+                    .then(data => data.json())
+                    .then(values => {
+                        if(values?.items?.length > 0 && !values.isOfssetAboveMax) {
+                            if(page == 1) this.fieldsInFilter[idCore] = []
 
-                        this.fieldsInFilter[idCore] = this.fieldsInFilter[idCore].concat(values)
+                            this.fieldsInFilter[idCore] = this.fieldsInFilter[idCore].concat(values)
 
-                        page++
-                        this.getFieldsExportByPage(page, idCore)
-                    } else if(idCore < 10) {
-                        page = 1
-                        idCore++
-                        this.getFieldsExportByPage(page, idCore)
-                    }
+                            page++
+                            this.getFieldsExportByPage(page, idCore)
+                        } else if(idCore < 10) {
+                            page = 1
+                            idCore++
+                            this.getFieldsExportByPage(page, idCore)
+                        }
+                    })
+                    .catch(() => {
+                        this.loadingFilters = false
+                    })
                 })
-                .catch(() => {
-                    this.loadingFilters = false
-                })
-            })
 
-            this.loadingFilters = false
-            return
+                this.loadingFilters = false
+                return
+            }, 300) 
         },
         async getFieldsExport() {
             this.checkTokens()
@@ -268,6 +277,9 @@ export default {
     async beforeMount() {        
         this.getAllData()
     },
+    beforeDestroy() {
+        clearInterval(this.idInterval)
+    }
 }
 </script>
 

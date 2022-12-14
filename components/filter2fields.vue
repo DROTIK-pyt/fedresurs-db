@@ -113,7 +113,6 @@ export default {
             //         idTypeOfField: values[0].idTypeOfField,
             //     }
             // })
-            // console.log(values)
         })
 
         

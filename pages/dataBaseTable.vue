@@ -71,7 +71,9 @@ export default {
         entity: "",
 
         theEntity: "",
-        isOpenShowEntity: false
+        isOpenShowEntity: false,
+
+        idInterval: null
     }),
     watch: {
         entity() {
@@ -229,7 +231,9 @@ export default {
                     })
 
                     page++
-                    this.getAllDataFields(idCore, page)
+                    this.idInterval = setInterval(() => {
+                        this.getAllDataFields(idCore, page)
+                    }, 300)
                 })
             })
         },
@@ -264,6 +268,9 @@ export default {
         
         this.getAllData()
     },
+    beforeDestroy() {
+        clearInterval(this.idInterval)
+    }
 }
 </script>
 
