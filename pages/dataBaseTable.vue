@@ -231,9 +231,7 @@ export default {
                     })
 
                     page++
-                    this.idInterval = setInterval(() => {
-                        this.getAllDataFields(idCore, page)
-                    }, 300)
+                    this.getAllDataFields(idCore, page)
                 })
             })
         },
