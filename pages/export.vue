@@ -237,7 +237,7 @@ export default {
 
                             page++
                             this.getFieldsExportByPage(page, idCore)
-                        } else if(idCore < 10) {
+                        } else if(idCore < 5) {
                             page = 1
                             idCore++
                             this.getFieldsExportByPage(page, idCore)

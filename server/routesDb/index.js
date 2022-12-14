@@ -460,11 +460,7 @@ module.exports = function(app, upload, jwt) {
             return
         }
 
-        if(offset >= max && page == 1) {
-            offset = 0
-            limit = max
-            isOfssetAboveMax = true
-        } else if(offset >= max && page > 1) {
+        if(offset >= max) {
             res.json({items: []})
             return
         }
