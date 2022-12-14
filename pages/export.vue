@@ -76,7 +76,7 @@ export default {
         isShowError: false,
         errorMsg: "",
 
-        idInterval: null,
+        abortControllerInstance: null,
     }),
     components: {filter2fields, errorMsgVue},
     methods: {
@@ -199,6 +199,7 @@ export default {
         },
         async getFieldsExportByPage(page = 1, idCore = 1) {
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
+                signal: this.abortControllerInstance.signal,
                 method: "POST",
                 headers: {
                     // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
@@ -211,6 +212,7 @@ export default {
             .then(result => result.json())
             .then(max => {
                 fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`, {
+                    signal: this.abortControllerInstance.signal,
                     method: "POST",
                     headers: {
                         // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
@@ -268,11 +270,13 @@ export default {
             this.getFieldsExport()
         },
     },
-    async beforeMount() {        
+    async beforeMount() {      
+        this.abortControllerInstance = new AbortController()
+        
         this.getAllData()
     },
     beforeDestroy() {
-        clearInterval(this.idInterval)
+        this.abortControllerInstance.abort()
     }
 }
 </script>

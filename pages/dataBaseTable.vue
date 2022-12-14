@@ -73,7 +73,7 @@ export default {
         theEntity: "",
         isOpenShowEntity: false,
 
-        idInterval: null
+        abortControllerInstance: null
     }),
     watch: {
         entity() {
@@ -181,6 +181,7 @@ export default {
             this.checkTokens()
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
+                signal: this.abortControllerInstance.signal,
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
@@ -194,6 +195,7 @@ export default {
                 console.log(max)
 
                 fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
+                    signal: this.abortControllerInstance.signal,
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json;charset=utf-8',
@@ -262,12 +264,14 @@ export default {
     },
     components: {theEntityVue},
     async beforeMount() {
+        this.abortControllerInstance = new AbortController()
+
         this.checkTokens()
         
         this.getAllData()
     },
     beforeDestroy() {
-        clearInterval(this.idInterval)
+        this.abortControllerInstance.abort()
     }
 }
 </script>
