@@ -81,7 +81,7 @@ export default {
     components: {filter2fields, errorMsgVue},
     watch: {
         fieldsInFilter() {
-            console.log(this.fieldsInFilter)
+            console.log({fieldsInFilter: this.fieldsInFilter})
         },
     },
     methods: {
