@@ -66,7 +66,7 @@ export default {
     data: () => ({
         cores: [],
         fields: [],
-        fieldsInFilter: [],
+        fieldsInFilter: {},
         isShow: false,
         loading: true,
         loadingFilters: true,
@@ -188,12 +188,60 @@ export default {
 
             if(resultCores.ok) {
                 this.cores = resultCores.cores
-                this.fieldsInFilter = resultCores.cores
+                // this.fieldsInFilter = resultCores.cores
 
                 this.cores.forEach(aCore => {
                     aCore.exportField = []
                 })
             }
+        },
+        async getFieldsExportByPage(page = 1, idCore = 1) {
+            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
+                method: "POST",
+                headers: {
+                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                    'Content-Type': 'application/json;charset=utf-8'
+                },
+                body: JSON.stringify({
+                    idCore
+                })
+            })
+            .then(result => result.json())
+            .then(max => {
+                fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`, {
+                    method: "POST",
+                    headers: {
+                        // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                        'Content-Type': 'application/json;charset=utf-8'
+                    },
+                    body: JSON.stringify({
+                        page,
+                        idCore,
+                        max
+                    })
+                })
+                .then(data => data.json())
+                .then(values => {
+                    if(values?.items?.length > 0 && !values.isOfssetAboveMax) {
+                        if(page == 1) this.fieldsInFilter[idCore] = []
+
+                        this.fieldsInFilter[idCore] = this.fieldsInFilter[idCore].concat(values)
+
+                        page++
+                        this.getFieldsExportByPage(page, idCore)
+                    } else if(idCore < 10) {
+                        page = 1
+                        idCore++
+                        this.getFieldsExportByPage(page, idCore)
+                    }
+                })
+                .catch(() => {
+                    this.loadingFilters = false
+                })
+            })
+
+            this.loadingFilters = false
+            return
         },
         async getFieldsExport() {
             this.checkTokens()
@@ -205,16 +253,7 @@ export default {
                 this.fields = resultTypeOfField.fieldsValues
             }
 
-            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`)
-            .then(data => data.json())
-            .then(values => {
-                this.fieldsInFilter = values
-
-                this.loadingFilters = false
-            })
-            .catch(() => {
-                this.loadingFilters = false
-            })
+            this.getFieldsExportByPage()
 
             this.loading = false
         },

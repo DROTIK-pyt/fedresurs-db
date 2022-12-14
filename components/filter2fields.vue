@@ -16,12 +16,12 @@
                         cols="12"
                         sm="12"
                         v-for="field in fieldsExport"
-                        :key="field.idCore"
+                        :key="field.name"
                     >
                         <h4>{{ field.name }}</h4>
                         <div
                             v-for="item in field.items"
-                            :key="item.idTypeOfField"
+                            :key="item.name"
                         >
                             <v-autocomplete
                                 v-model="filters[`${field.idCore}`]"
@@ -58,31 +58,65 @@ export default {
         filters: {},
     }),
     async beforeMount() {
-        this.fields.forEach((field, i) => {
-            this.fieldsExport.push({
-                name: field.name,
-                idCore: field.idCore,
-                items: [],
-            })
-            if(field?.theCores.length) {
-                let index = 0
-                field?.theCores[0]?.typeOfFields?.forEach(elem => {
-                    this.fieldsExport[i].items.push({
-                        name: elem.name,
-                        idTypeOfField: elem.idTypeOfField,
-                        values: [],
-                    })
+        const keys = Object.keys(this.fields)
+        
+        console.log(this.fields)
 
-                    elem.coreTypeOfFields.forEach(CTOF => {
-                        this.fieldsExport[i].items[index].values.push({
-                            value: CTOF.value,
-                            theCoreIdTheCore: CTOF.theCoreIdTheCore
+        keys.forEach(k => {
+            let tValues = []
+            let vals = {}
+            let idCore = k
+            let name = this.fields[k][0].name
+
+            this.fields[k].forEach(field => {
+                if(field.items.length > 0) {
+
+                    field.items.forEach(theCore => {
+                        theCore.typeOfFields.forEach(TOF => {
+                            let value = {
+                                value: TOF.coreTypeOfField.value,
+                                theCoreIdTheCore: TOF.coreTypeOfField.theCoreIdTheCore,
+                                idTypeOfField: TOF.idTypeOfField,
+                                nameField: TOF.name
+                            }
+                            tValues.push(value)
                         })
                     })
-                    index++
+                }
+            })
+
+            tValues.forEach(val => {
+                if(!vals[`${val.idTypeOfField}`])
+                    vals[`${val.idTypeOfField}`] = {
+                        name: val.nameField,
+                        values: []
+                    }
+                
+                vals[`${val.idTypeOfField}`].values.push({
+                    theCoreIdTheCore: val.theCoreIdTheCore,
+                    value: val.value,
                 })
-            }
+            })
+
+            console.log(vals)
+            this.fieldsExport.push({
+                idCore,
+                name,
+                items: vals
+            })
+            // console.log({
+            //     idCore,
+            //     name,
+            //     items: {
+            //         values,
+            //         name: values[0].name,
+            //         idTypeOfField: values[0].idTypeOfField,
+            //     }
+            // })
+            // console.log(values)
         })
+
+        
     },
 }
 </script>

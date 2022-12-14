@@ -391,11 +391,51 @@ module.exports = function(app, upload, jwt) {
         res.json({ok: true, fieldsValues})
     })
 
-    app.get('/fieldsExport', async (req, res) => {
-        const aTheCore = await Scheme.core.findAll({
-            include: {
-                model: Scheme.theCore,
-                include: {
+    app.post('/fieldsExportGetCount', async (req, res) => {
+        const { idCore } = req.body
+
+        const aCore = await Scheme.core.findOne({
+            where: {
+                idCore
+            }
+        })
+
+        if(aCore) {
+            const max = await aCore.countTheCores()
+            res.json(max)
+            return
+        }
+        res.json(-1)
+    })
+
+    app.post('/fieldsExport', async (req, res) => {
+        const { page, idCore, max } = req.body
+        let limit = 100
+        let offset = limit * page - limit
+        let isOfssetAboveMax = false
+
+        if(max < 0) {
+            res.json({items: []})
+            return
+        }
+
+        if(offset >= max) {
+            offset = 0
+            limit = max
+            isOfssetAboveMax = true
+        }
+
+        const aCore = await Scheme.core.findOne({
+            where: {
+                idCore
+            }
+        })
+
+        if(aCore) {
+            const theCores = await aCore.getTheCores({
+                limit,
+                offset,
+                include: [{
                     model: Scheme.typeOfField,
                     include: {
                         model: Scheme.coreTypeOfField,
@@ -405,11 +445,19 @@ module.exports = function(app, upload, jwt) {
                             }
                         }
                     }
-                }
-            }
-        })
+                }]
+            })
 
-        res.json(aTheCore)
+            res.json({ 
+                name: aCore.name,
+                idCore: aCore.idCore,
+                items: theCores,
+                isOfssetAboveMax
+            })
+            return
+        }
+
+        res.json({items: []})
     })
 
     app.get('/cores', async (req, res) => {
