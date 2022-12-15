@@ -487,14 +487,14 @@ module.exports = function(app, upload, jwt) {
                 offset,
                 include: [{
                     model: Scheme.typeOfField,
-                    include: [{
-                        model: Scheme.coreTypeOfField,
-                        where: {
-                            value: {
-                                [Op.ne]: ""
-                            }
-                        }
-                    }]
+                    // include: [{
+                    //     model: Scheme.coreTypeOfField,
+                    //     where: {
+                    //         value: {
+                    //             [Op.ne]: ""
+                    //         }
+                    //     }
+                    // }]
                 }]
             })
 
