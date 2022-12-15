@@ -60,7 +60,7 @@ export default {
     async beforeMount() {
         const keys = Object.keys(this.fields)
         
-        console.log(this.fields)
+        // console.log(this.fields)
 
         keys.forEach(k => {
             let tValues = []
@@ -100,7 +100,7 @@ export default {
                 })
             })
 
-            console.log(vals)
+            // console.log(vals)
             this.fieldsExport.push({
                 idCore,
                 name,
