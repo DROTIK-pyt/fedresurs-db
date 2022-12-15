@@ -459,7 +459,7 @@ module.exports = function(app, upload, jwt) {
 
     app.post('/fieldsExport', async (req, res) => {
         const { page, idCore, max } = req.body
-        let limit = 10
+        let limit = 1000
         let offset = limit * page - limit
         let isOfssetAboveMax = false
 
