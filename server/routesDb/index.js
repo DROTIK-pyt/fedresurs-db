@@ -463,6 +463,8 @@ module.exports = function(app, upload, jwt) {
         let offset = limit * page - limit
         let isOfssetAboveMax = false
 
+        console.log({ page, idCore, max })
+
         if(max < 0) {
             res.json({items: []})
             return
