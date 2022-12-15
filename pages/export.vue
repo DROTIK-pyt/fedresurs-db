@@ -228,14 +228,16 @@ export default {
                 })
                 .then(data => data.json())
                 .then(values => {
-                    if(values?.items?.length > 0) {
+                    this.loadingFilters = false
+                    console.log(values.items)
+                    
+                    if(values.items) {
                         if(page == 1) this.fieldsInFilter[idCore] = []
 
                         this.fieldsInFilter[idCore] = this.fieldsInFilter[idCore].concat(values)
                         console.log(this.fieldsInFilter)
 
                         page++
-                        this.loadingFilters = false
                         this.getFieldsExportByPage(page, idCore)
                     } else if(idCore < 5) {
                         page = 1
