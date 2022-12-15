@@ -192,7 +192,7 @@ export default {
             })
             .then(d => d.json())
             .then(max => {
-                console.log(max)
+                // console.log(max)
 
                 fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
                     signal: this.abortControllerInstance.signal,
