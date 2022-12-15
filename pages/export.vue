@@ -180,8 +180,6 @@ export default {
         showFilters() {
             this.checkTokens()
 
-            this.getFieldsExportByPage()
-
             this.isShow = true
         },
         async getDataCores() {
@@ -201,7 +199,7 @@ export default {
         },
         async getFieldsExportByPage(page = 1, idCore = 1) {
             console.log("start", {page, idCore})
-            
+
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
                 signal: this.abortControllerInstance.signal,
                 method: "POST",
@@ -274,7 +272,9 @@ export default {
             this.getFieldsExport()
         },
     },
-    beforeMount() {      
+    beforeMount() {
+        this.getFieldsExportByPage()
+
         this.abortControllerInstance = new AbortController()
         
         this.getAllData()
