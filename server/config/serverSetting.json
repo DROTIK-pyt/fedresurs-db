@@ -1,4 +1,4 @@
 {
-    "baseUrl": "http://fed-bd.ru",
+    "baseUrl": "http://localhost",
     "port": "8888"
 }

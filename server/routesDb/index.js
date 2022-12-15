@@ -1061,6 +1061,9 @@ module.exports = function(app, upload, jwt) {
 
         let result = []
 
+        console.log(fieldsAndValue.length, rows[0][0].length)
+        console.log(fieldsAndValue.length / rows[0][0].length)
+        console.log(Math.round(fieldsAndValue.length / rows[0][0].length))
         let itterators = Array(Math.round(fieldsAndValue.length / rows[0][0].length)).fill(0)
 
         for(let i = 0; i < itterators.length; i++) {
