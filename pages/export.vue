@@ -177,7 +177,7 @@ export default {
             a.style.display = 'none'
             a.click()
         },
-        async showFilters() {
+        showFilters() {
             this.checkTokens()
 
             this.getFieldsExportByPage()
@@ -199,7 +199,7 @@ export default {
                 })
             }
         },
-        async getFieldsExportByPage(page = 1, idCore = 1) {
+        getFieldsExportByPage(page = 1, idCore = 1) {
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
                 signal: this.abortControllerInstance.signal,
                 method: "POST",
