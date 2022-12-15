@@ -18,6 +18,13 @@
             >
                 Фильтры
             </v-btn>
+            <v-btn
+                depressed
+                color="success"
+                @click="startLoadingFilter"
+            >
+                Начать загрузку фильтров
+            </v-btn>
         </v-col>
         <v-col sm="12" cols="12" v-for="(entity, index) in cores" :key="entity.idCore">
             <h2>{{ entity.name }}</h2>
@@ -69,7 +76,8 @@ export default {
         fieldsInFilter: {},
         isShow: false,
         loading: true,
-        loadingFilters: true,
+        loadingFilters: false,
+        loadingExport: false,
 
         filters: [],
 
@@ -80,6 +88,11 @@ export default {
     }),
     components: {filter2fields, errorMsgVue},
     methods: {
+        startLoadingFilter() {
+            this.loadingFilters = true
+
+            this.getFieldsExportByPage()
+        },
         async checkTokens() {
             let accessToken = localStorage.getItem("accessToken")
             let sessionId = localStorage.getItem("sessionId")
@@ -139,6 +152,9 @@ export default {
             this.isShow = false
 
             this.filters = filters
+
+            this.abortControllerInstance.abort()
+            this.abortControllerInstance = new AbortController()
         },
         async exportToExcel() {
             this.checkTokens()
@@ -179,6 +195,8 @@ export default {
         },
         showFilters() {
             this.checkTokens()
+
+            this.startLoadingFilter()
 
             this.isShow = true
         },
@@ -274,8 +292,6 @@ export default {
     },
     beforeMount() {
         this.abortControllerInstance = new AbortController()
-
-        this.getFieldsExportByPage()
         
         this.getAllData()
     },
