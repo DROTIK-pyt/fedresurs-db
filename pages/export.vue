@@ -235,6 +235,7 @@ export default {
                         console.log(this.fieldsInFilter)
 
                         page++
+                        this.loadingFilters = false
                         this.getFieldsExportByPage(page, idCore)
                     } else if(idCore < 5) {
                         page = 1
@@ -246,7 +247,6 @@ export default {
                     this.loadingFilters = false
                 })
             })
-            this.loadingFilters = false
             return
         },
         async getFieldsExport() {
