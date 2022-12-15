@@ -199,7 +199,9 @@ export default {
                 })
             }
         },
-        getFieldsExportByPage(page = 1, idCore = 1) {
+        async getFieldsExportByPage(page = 1, idCore = 1) {
+            console.log("start", {page, idCore})
+            
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
                 signal: this.abortControllerInstance.signal,
                 method: "POST",
@@ -213,6 +215,7 @@ export default {
             })
             .then(result => result.json())
             .then(max => {
+                console.log(max)
                 fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`, {
                     signal: this.abortControllerInstance.signal,
                     method: "POST",
@@ -230,7 +233,7 @@ export default {
                 .then(values => {
                     this.loadingFilters = false
                     console.log(values.items)
-                    
+
                     if(values.items) {
                         if(page == 1) this.fieldsInFilter[idCore] = []
 
