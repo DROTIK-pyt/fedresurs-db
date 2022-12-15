@@ -18,13 +18,6 @@
             >
                 Фильтры
             </v-btn>
-            <v-btn
-                depressed
-                color="success"
-                @click="startLoadingFilter"
-            >
-                Начать загрузку фильтров
-            </v-btn>
         </v-col>
         <v-col sm="12" cols="12" v-for="(entity, index) in cores" :key="entity.idCore">
             <h2>{{ entity.name }}</h2>
