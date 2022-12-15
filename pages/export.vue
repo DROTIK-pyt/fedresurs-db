@@ -273,9 +273,9 @@ export default {
         },
     },
     beforeMount() {
-        this.getFieldsExportByPage()
-
         this.abortControllerInstance = new AbortController()
+
+        this.getFieldsExportByPage()
         
         this.getAllData()
     },
