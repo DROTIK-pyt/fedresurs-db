@@ -487,16 +487,27 @@ module.exports = function(app, upload, jwt) {
                 offset,
                 include: [{
                     model: Scheme.typeOfField,
-                    include: {
+                    include: [{
                         model: Scheme.coreTypeOfField,
                         where: {
                             value: {
                                 [Op.ne]: ""
                             }
                         }
-                    }
+                    }]
                 }]
             })
+
+            // for(let i = 0; i < theCores.length; i++) {
+            //     let aTheCore = theCores[i]
+
+            //     theCores[i].typeOfFields = await aTheCore.getTypeOfFields()
+
+            //     for(let g = 0; g < theCores[i].typeOfFields.length; g++) {
+            //         let t = await theCores[i].typeOfFields[g].getCoreTypeOfFields()
+            //         theCores[i].typeOfFields[g].coreTypeOfField = t[0]
+            //     }
+            // }
 
             res.json({ 
                 name: aCore.name,
