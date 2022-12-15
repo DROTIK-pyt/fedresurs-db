@@ -99,6 +99,14 @@ module.exports = function(app, upload, jwt) {
         return
     })
 
+    app.get('/getIdsCore', async (req, res) => {
+        const cores = await Scheme.core.findAll({
+            attributes: ['idCore']
+        })
+
+        res.json(cores)
+    })
+
     app.post('/allHeaders', async (req, res) => {
         const { idCore } = req.body
 

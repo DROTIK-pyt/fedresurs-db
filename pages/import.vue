@@ -499,9 +499,9 @@ export default {
         async uploadToBase() {
             this.checkTokens()
 
-            // const checkPerCentIntervalId = setInterval(async () => {
-            //     this.perCentUploadedData()
-            // }, 500)
+            const checkPerCentIntervalId = setInterval(async () => {
+                this.perCentUploadedData()
+            }, 500)
 
             this.loading2base = true
 

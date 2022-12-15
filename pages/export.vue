@@ -244,7 +244,6 @@ export default {
                     this.loadingFilters = false
                 })
             })
-
             this.loadingFilters = false
             return
         },
@@ -258,8 +257,6 @@ export default {
                 this.fields = resultTypeOfField.fieldsValues
             }
 
-            this.getFieldsExportByPage()
-
             this.loading = false
         },
         getAllData() {
@@ -268,9 +265,11 @@ export default {
             this.getDataCores()
 
             this.getFieldsExport()
+
+            this.getFieldsExportByPage()
         },
     },
-    async beforeMount() {      
+    beforeMount() {      
         this.abortControllerInstance = new AbortController()
         
         this.getAllData()

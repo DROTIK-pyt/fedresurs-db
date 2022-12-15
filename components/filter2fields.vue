@@ -73,13 +73,15 @@ export default {
 
                     field.items.forEach(theCore => {
                         theCore.typeOfFields.forEach(TOF => {
-                            let value = {
-                                value: TOF.coreTypeOfField.value,
-                                theCoreIdTheCore: TOF.coreTypeOfField.theCoreIdTheCore,
-                                idTypeOfField: TOF.idTypeOfField,
-                                nameField: TOF.name
+                            if(TOF.coreTypeOfField.value != "") {
+                                let value = {
+                                    value: TOF.coreTypeOfField.value,
+                                    theCoreIdTheCore: TOF.coreTypeOfField.theCoreIdTheCore,
+                                    idTypeOfField: TOF.idTypeOfField,
+                                    nameField: TOF.name
+                                }
+                                tValues.push(value)
                             }
-                            tValues.push(value)
                         })
                     })
                 }
