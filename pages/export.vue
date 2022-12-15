@@ -180,6 +180,8 @@ export default {
         async showFilters() {
             this.checkTokens()
 
+            this.getFieldsExportByPage()
+
             this.isShow = true
         },
         async getDataCores() {
@@ -265,8 +267,6 @@ export default {
             this.getDataCores()
 
             this.getFieldsExport()
-
-            this.getFieldsExportByPage()
         },
     },
     beforeMount() {      
