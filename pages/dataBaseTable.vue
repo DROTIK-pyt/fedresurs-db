@@ -193,7 +193,7 @@ export default {
                 })
                 const counted = await fc.json()
 
-                allPages = Math.ceil(counted/1000)
+                allPages = Math.ceil(counted/400)
             }
 
             if(page > allPages && allPages != 0) return
