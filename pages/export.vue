@@ -261,8 +261,6 @@ export default {
             .then(data => data.json())
             .then(values => {
                 if(values.items) {
-                    console.log(idCore, page)
-
                     this.fieldsInFilter[idCore] = this.fieldsInFilter[idCore].concat(values)
                 }
             })

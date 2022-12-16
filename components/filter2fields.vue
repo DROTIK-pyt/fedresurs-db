@@ -11,7 +11,7 @@
             </v-card-title>
             <v-card-text>
             <v-container>
-                <v-row>
+                <v-row v-if="fieldsExport">
                     <v-col
                         cols="12"
                         sm="12"
@@ -33,6 +33,11 @@
                             ></v-autocomplete>    
                         </div>
                     </v-col>
+                </v-row>
+                <v-row
+                    v-else
+                >
+                    <p>Фильтры все еще загружаются, но вот-вот уже появятся :)</p>
                 </v-row>
             </v-container>
             </v-card-text>
