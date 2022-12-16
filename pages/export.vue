@@ -86,7 +86,7 @@ export default {
     methods: {
         async startLoadingFilter() {
             this.checkTokens()
-            
+
             this.loadingFilters = true
 
             const coreIdsData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getIdsCore`)
@@ -210,8 +210,6 @@ export default {
         showFilters() {
             this.checkTokens()
 
-            this.startLoadingFilter()
-
             this.isShow = true
         },
         async getDataCores() {
@@ -287,7 +285,7 @@ export default {
 
             this.loading = false
         },
-        getAllData() {
+        async getAllData() {
             this.checkTokens()
             
             this.getDataCores()
@@ -295,10 +293,12 @@ export default {
             this.getFieldsExport()
         },
     },
-    beforeMount() {
+    async beforeMount() {
         this.abortControllerInstance = new AbortController()
         
-        this.getAllData()
+        await this.getAllData()
+
+        this.startLoadingFilter()
     },
     beforeDestroy() {
         this.abortControllerInstance.abort()
