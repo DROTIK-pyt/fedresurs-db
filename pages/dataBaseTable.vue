@@ -177,29 +177,8 @@ export default {
                 })
             })
         },
-        async getAllDataFields(idCore, page, allPages = 0) {
+        async getAllDataFields(idCore, page = 1) {
             this.checkTokens()
-
-            if(allPages == 0) {
-                const fc = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
-                    signal: this.abortControllerInstance.signal,
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json;charset=utf-8',
-                    },
-                    body: JSON.stringify({
-                        idCore,
-                    })
-                })
-                fieldsCount = await fc.json()
-
-                allPages = Math.ceil(fieldsCount/1000)
-
-                for(let page = 1; page <= allPages; page++) {
-                    this.getAllDataFields(idCore, page, allPages)
-                }
-                return
-            }            
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
                 signal: this.abortControllerInstance.signal,
@@ -254,6 +233,9 @@ export default {
                     })
                 })
             })
+
+            page++
+            this.getAllDataFields(idCore, page)
         },
         async showEntity({idEntity}) {
             this.checkTokens()

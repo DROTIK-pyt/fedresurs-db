@@ -5,7 +5,7 @@ const cyrillicToTranslit = new CyrillicToTranslit()
 const json2xls = require('json2xls')
 const { v4: uuidv4 } = require('uuid')
 const fs = require('fs')
-// const path = require('path')
+const path = require('node:path')
 
 const cache = []
 
