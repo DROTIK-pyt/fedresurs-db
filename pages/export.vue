@@ -85,6 +85,8 @@ export default {
     components: {filter2fields, errorMsgVue},
     methods: {
         async startLoadingFilter() {
+            this.checkTokens()
+            
             this.loadingFilters = true
 
             const coreIdsData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getIdsCore`)
