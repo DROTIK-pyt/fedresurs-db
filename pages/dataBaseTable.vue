@@ -177,8 +177,26 @@ export default {
                 })
             })
         },
-        async getAllDataFields(idCore, page = 1) {
+        async getAllDataFields(idCore, page = 1, allPages = 0) {
             this.checkTokens()
+
+            if(page > allPages) return
+
+            if(allPages == 0) {
+                const fc = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
+                    signal: this.abortControllerInstance.signal,
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json;charset=utf-8',
+                    },
+                    body: JSON.stringify({
+                        idCore,
+                    })
+                })
+                const counted = await fc.json()
+
+                allPages = Math.ceil(counted/1000)
+            }
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
                 signal: this.abortControllerInstance.signal,
@@ -209,10 +227,6 @@ export default {
                 .then(data => data.json())
                 .then(semiFields => {
 
-                    if(!semiFields.ok) {
-                        return
-                    }
-
                     // Получить данные сущности по столбцам
                     const entities = semiFields.fields
 
@@ -234,7 +248,7 @@ export default {
                 })
             })
             page++
-            this.getAllDataFields(idCore, page)
+            this.getAllDataFields(idCore, page, allPages)
         },
         async showEntity({idEntity}) {
             this.checkTokens()
