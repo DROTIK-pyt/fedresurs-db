@@ -83,6 +83,8 @@ export default {
 
             // console.log(this.entity)
 
+            this.checkTokens()
+
             this.getAllHeaders(this.entity)
             this.getAllDataFields(this.entity)
 
@@ -178,8 +180,6 @@ export default {
             })
         },
         async getAllDataFields(idCore, page = 1, allPages = 0) {
-            this.checkTokens()
-
             if(allPages == 0) {
                 const fc = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
                     signal: this.abortControllerInstance.signal,
