@@ -198,8 +198,8 @@ export default {
                 for(let page = 1; page <= allPages; page++) {
                     this.getAllDataFields(idCore, page, allPages)
                 }
-            }
-            
+                return
+            }            
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
                 signal: this.abortControllerInstance.signal,
