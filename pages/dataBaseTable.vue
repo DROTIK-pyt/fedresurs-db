@@ -83,8 +83,6 @@ export default {
 
             // console.log(this.entity)
 
-            this.checkTokens()
-
             this.getAllHeaders(this.entity)
             this.getAllDataFields(this.entity)
 
@@ -156,6 +154,8 @@ export default {
             this.allEntities = result.entities
         },
         async getAllHeaders(idCore) {
+            this.checkTokens()
+
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/allHeaders`, {
                 method: "POST",
                 headers: {
@@ -236,7 +236,7 @@ export default {
             setTimeout(() => {
                 page++
                 this.getAllDataFields(idCore, page, allPages)
-            }, 80)
+            }, 100)
         },
         async showEntity({idEntity}) {
             this.checkTokens()
