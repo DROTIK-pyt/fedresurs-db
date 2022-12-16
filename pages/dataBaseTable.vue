@@ -233,7 +233,6 @@ export default {
                     })
                 })
             })
-
             page++
             this.getAllDataFields(idCore, page)
         },
