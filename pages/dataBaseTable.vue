@@ -196,9 +196,9 @@ export default {
                 allPages = Math.ceil(counted/1000)
             }
 
-            if(page > allPages) return
+            if(page > allPages && allPages != 0) return
 
-            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
+            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
                 signal: this.abortControllerInstance.signal,
                 method: "POST",
                 headers: {
@@ -206,47 +206,33 @@ export default {
                 },
                 body: JSON.stringify({
                     idCore,
+                    page,
+                    allPages
                 })
             })
-            .then(d => d.json())
-            .then(max => {
-                // console.log(max)
+            .then(data => data.json())
+            .then(semiFields => {
 
-                fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
-                    signal: this.abortControllerInstance.signal,
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json;charset=utf-8',
-                    },
-                    body: JSON.stringify({
-                        idCore,
-                        page,
-                        max
+                // Получить данные сущности по столбцам
+                const entities = semiFields.fields
+
+                // Вставить данные сущности
+                let elem = {}
+
+                entities.theCores.forEach(entity => {
+                    entity.typeOfFields.forEach(field => {
+                        if(field.coreTypeOfField.value) {
+                            elem[`${field.tag}`] = field.coreTypeOfField.value
+                        } else {
+                            elem[`${field.tag}`] = "Нет данных"
+                        }
                     })
-                })
-                .then(data => data.json())
-                .then(semiFields => {
-
-                    // Получить данные сущности по столбцам
-                    const entities = semiFields.fields
-
-                    // Вставить данные сущности
-                    let elem = {}
-
-                    entities.theCores.forEach(entity => {
-                        entity.typeOfFields.forEach(field => {
-                            if(field.coreTypeOfField.value) {
-                                elem[`${field.tag}`] = field.coreTypeOfField.value
-                            } else {
-                                elem[`${field.tag}`] = "Нет данных"
-                            }
-                        })
-                        elem['idEntity'] = entity.idTheCore
-                        this.entities.push(elem)
-                        elem = {}
-                    })
+                    elem['idEntity'] = entity.idTheCore
+                    this.entities.push(elem)
+                    elem = {}
                 })
             })
+
             page++
             this.getAllDataFields(idCore, page, allPages)
         },
