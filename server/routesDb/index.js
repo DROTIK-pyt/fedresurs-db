@@ -104,7 +104,12 @@ module.exports = function(app, upload, jwt) {
             attributes: ['idCore']
         })
 
-        res.json(cores)
+        let coreIds = []
+        cores.forEach(aCore => {
+            coreIds.push(aCore.idCore)
+        })
+
+        res.json(coreIds)
     })
 
     app.post('/allHeaders', async (req, res) => {

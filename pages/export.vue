@@ -78,7 +78,7 @@ export default {
         errorMsg: "",
 
         coreIds: [],
-        countAllFields: -1,
+        currentIdCore: -1,
 
         abortControllerInstance: null,
     }),
@@ -87,25 +87,13 @@ export default {
         async startLoadingFilter() {
             this.checkTokens()
 
-            this.loadingFilters = true
-
             const coreIdsData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getIdsCore`)
             this.coreIds = await coreIdsData.json()
+            this.currentIdCore = this.coreIds[0]
 
-            const countAllFieldsData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
-                signal: this.abortControllerInstance.signal,
-                method: "POST",
-                headers: {
-                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
-                    'Content-Type': 'application/json;charset=utf-8'
-                },
-                body: JSON.stringify({
-                    idCore
-                })
-            })
-            this.countAllFields = await countAllFieldsData.json()
-
-            this.getFieldsExportByPage()
+            setTimeout(() => {
+                this.getFieldsExportByPage()
+            }, 500)
         },
         async checkTokens() {
             let accessToken = localStorage.getItem("accessToken")
@@ -227,20 +215,35 @@ export default {
                 })
             }
         },
-        async getFieldsExportByPage(page = 1, idIndex = 1, allPages = -1) {
-            // console.log("start", {page, idCore})
-
-            let idCore = this.coreIds[idIndex].idCore
+        async getFieldsExportByPage(page = 1, idIndex = 0, allPages = -1) {
             if(allPages == -1) allPages = Math.ceil(this.coreIds.length/500)
 
-            if(page > allPages) {
+            if(page > allPages && page != 1) {
                 page = 1
                 idIndex++
 
-                if(idIndex > this.coreIds.length) return
+                if(idIndex >= this.coreIds.length) return
 
-                idCore = this.coreIds[idIndex].idCore
+                this.currentIdCore = this.coreIds[idIndex]
             }
+            let idCore = this.currentIdCore
+
+            if(page == 1) this.fieldsInFilter[idCore] = []
+
+            // console.log({page, idIndex, allPages, currentIdCore: this.currentIdCore})
+
+            let countAllFieldsData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
+                signal: this.abortControllerInstance.signal,
+                method: "POST",
+                headers: {
+                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                    'Content-Type': 'application/json;charset=utf-8'
+                },
+                body: JSON.stringify({
+                    idCore
+                })
+            })
+            let countAllFields = await countAllFieldsData.json()
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`, {
                 signal: this.abortControllerInstance.signal,
@@ -252,26 +255,20 @@ export default {
                 body: JSON.stringify({
                     page,
                     idCore,
-                    max: this.countAllFields
+                    max: countAllFields
                 })
             })
             .then(data => data.json())
             .then(values => {
-                this.loadingFilters = false
-                // console.log(values.items)
-
                 if(values.items) {
-                    if(page == 1) this.fieldsInFilter[idCore] = []
+                    console.log(idCore, page)
 
                     this.fieldsInFilter[idCore] = this.fieldsInFilter[idCore].concat(values)
-                    // console.log(this.fieldsInFilter)
                 }
             })
-            .catch(() => {
-                this.loadingFilters = false
-            })
 
-            this.getFieldsExportByPage(page, idCore, allPages)
+            page++
+            this.getFieldsExportByPage(page, idIndex, allPages)
         },
         async getFieldsExport() {
             this.checkTokens()
