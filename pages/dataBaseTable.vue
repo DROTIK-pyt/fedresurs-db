@@ -233,8 +233,10 @@ export default {
                 })
             })
 
-            page++
-            this.getAllDataFields(idCore, page, allPages)
+            setTimeout(() => {
+                page++
+                this.getAllDataFields(idCore, page, allPages)
+            }, 80)
         },
         async showEntity({idEntity}) {
             this.checkTokens()
