@@ -180,8 +180,6 @@ export default {
         async getAllDataFields(idCore, page = 1, allPages = 0) {
             this.checkTokens()
 
-            if(page > allPages) return
-
             if(allPages == 0) {
                 const fc = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
                     signal: this.abortControllerInstance.signal,
@@ -197,6 +195,8 @@ export default {
 
                 allPages = Math.ceil(counted/1000)
             }
+
+            if(page > allPages) return
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
                 signal: this.abortControllerInstance.signal,
