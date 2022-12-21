@@ -1004,22 +1004,26 @@ module.exports = function(app, upload, jwt) {
 
             keys.push({Key: `${uid}.xlsx`, Size: 123})
             
-            fs.writeFile(`${uid}.xlsx`, xls, (err) => {
-                if(!err) {
-                    YC.uploadFile(fs.readFileSync(path.resolve(`../static/downloads/${uid}.xlsx`)), `${uid}.xlsx`, 'fed-bd')
-                }
-            })
+            fs.writeFileSync(path.resolve(`../static/downloads/${uid}.xlsx`), xls, "binary")
+
+            const xlsBuffer = fs.readFileSync(path.resolve(`../static/downloads/${uid}.xlsx`))
+            await YC.uploadFile(xlsBuffer, `${uid}.xlsx`, 'fed-bd')
 
             result = []
         }
-
-        let links = await YC.getDownloadLinks(keys, 'fed-bd')
-
-        res.json(links)
-
         setTimeout(async () => {
-            await YC.deleteObjects(links, 'fed-bd')
-        }, 2500)
+            let links = await YC.getDownloadLinks(keys, 'fed-bd')
+
+            res.json(links)
+        }, 100)
+    })
+
+    app.delete('/deleteObjects', async (req, res) => {
+        const { links } = req.body
+
+        await YC.deleteObjects(links, 'fed-bd')
+
+        res.json({ok: true})
     })
 
     app.get('/testServer', async (req, res) => {

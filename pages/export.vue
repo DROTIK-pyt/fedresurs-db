@@ -188,13 +188,24 @@ export default {
             })
 
             const links = await data.json()
-            console.log(links)
-            links.forEach(async link => {
+
+            for(let link of links) {
                 let a = document.createElement('a')
                 a.href = link.url
                 a.download = link.name
                 a.target = '_blank'
                 a.click()
+            }
+
+            await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/deleteObjects`, {
+                method: "DELETE",
+                headers: {
+                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                    'Content-Type': 'application/json;charset=utf-8'
+                },
+                body: JSON.stringify({
+                    links
+                })
             })
         },
         showFilters() {
