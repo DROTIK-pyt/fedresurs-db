@@ -78,7 +78,6 @@ async function deleteObjects(list = [], bucket) {
     
     list.forEach(item => {
         Objects.push({Key: item.name})
-        fs.unlinkSync(`../static/downloads/${item.name}`)
     })
 
     await s3.deleteObjects({
