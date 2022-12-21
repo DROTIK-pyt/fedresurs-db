@@ -6,6 +6,7 @@ const json2xls = require('json2xls')
 const { v4: uuidv4 } = require('uuid')
 const fs = require('fs')
 const path = require('node:path')
+const crypto = require('crypto')
 
 const cache = []
 
@@ -17,6 +18,7 @@ let wrote2base = 0
 
 const actions = require("../config/importActions.json")
 const classesFields = require("../config/fieldsClass.json")
+const YC = require("../api/yandexCloud")
 
 function ExcelDateToJSDate(serial) {
     let utc_days  = Math.floor(serial - 25569);
@@ -882,243 +884,141 @@ module.exports = function(app, upload, jwt) {
         res.json({ok: true})
     })
 
-    app.post('/exportToExcel', async (req, res) => {
+    app.post('/exportToExcel2', async (req, res) => {
         const { cores, filters } = req.body
-        const filterKeyCores = Object.keys(filters).map(f => +f) || []
-        const filterIdTheCoreValues = Object.values(filters) || []
+        const limit = 1000
+        let page = 1
+        let offset = limit * page - limit
 
-        for(let filterCurrentIndex = 0; filterCurrentIndex < filterIdTheCoreValues.length; filterCurrentIndex++) {
-            if(!filterIdTheCoreValues[filterCurrentIndex].length) {
-                filterIdTheCoreValues.splice(filterCurrentIndex, 1)
-                filterKeyCores.splice(filterCurrentIndex, 1)
+        let cntTheCores = 0
+
+        let core = cores[0]
+
+        let aCore = await Scheme.core.findOne({
+            where: {
+                idCore: core.idCore
             }
-        }
-        
-        // res.json({filterKeyCores, filterIdTheCoreValues})
-        // return
-
-        let isSplited = true
-        let cnt = 0
-        cores.forEach(aCore => {
-            cnt += aCore?.exportField?.length
         })
-        if(cnt > 1) {
-            isSplited = false
+
+        if(aCore) {
+            let allTheCores = await aCore.getTheCores()
+            cntTheCores = allTheCores.length
         }
-
-        let fieldsAndValue = []
-        let allData = {}
-
-        for(let i = 0; i < cores.length; i++) {
-            let aCore = cores[i]
-            allData[`${aCore.name}`] = []
-
-            for(let g = 0; g < aCore?.exportField?.length; g++) {
-                let idExportField = aCore.exportField[g]
-
-                let index = filterKeyCores.indexOf(aCore.idCore)
-
-                // res.json(filterIdTheCoreValues[index])
-                // return
-
-                let data
-                if(index > -1) {
-                    data = await Scheme.coreTypeOfField.findAll({
-                        where: {
-                            typeOfFieldIdTypeOfField: idExportField,
-                        },
-                        include: [{
-                            model: Scheme.theCore,
-                            where: {
-                                idTheCore: {
-                                    [Op.in]: filterIdTheCoreValues[index]
-                                }
-                            },
-                            include: {
-                                model: Scheme.core,
-                                where: {
-                                    idCore: aCore.idCore
-                                }
-                            }
-                        }, {
-                            model: Scheme.typeOfField,
-                        }],
-                    })
-                } else {
-                    data = await Scheme.coreTypeOfField.findAll({
-                        where: {
-                            typeOfFieldIdTypeOfField: idExportField,
-                        },
-                        include: [{
-                            model: Scheme.theCore,
-                            include: {
-                                model: Scheme.core,
-                                where: {
-                                    idCore: aCore.idCore
-                                }
-                            }
-                        }, {
-                            model: Scheme.typeOfField,
-                        }],
-                    })
-                }
-
-                allData[`${aCore.name}`].push(data)
-            }
-        }
-
-        // res.json(allData)
-        // return
-
-        let rows = []
-        
-        for(let i = 0; i < Object.values(allData).length; i++) {
-            let data = allData[Object.keys(allData)[i]]
-            rows[i] = []
-
-            for(let g = 0; g < data.length; g++) {
-                let row = {}
-                rows[i][g] = []
-
-                for(let k = 0; k < data[g].length; k++) {
-                    if(data[g][k]?.theCore) {
-                        row = {}
-                        row[`${Object.keys(allData)[i]}:${data[g][k].typeOfField.name}`] = []
-                        row[`${Object.keys(allData)[i]}:${data[g][k].typeOfField.name}`] = data[g][k].value
-                        rows[i][g].push(row)
-                    }
-                }
-            }
-        }
-
-        // res.json(rows)
-        // return
-
-        let itteratorsData = 0
-        let itteratorsCors = 0
-        let iData = 0
-        let FAVS = []
-        rows = rows.filter(row => row.length)
-
-        // res.json(rows)
-        // return
-
-        // res.json(rows[0][0][0]) // rows[сущность][поле][значение]
-        // return
-
-        while(true) {
-
-            let FAV = {}
-            let headElem = rows[itteratorsCors][itteratorsData][iData]
-            // console.log({itteratorsCors, itteratorsData, iData})
-
-            try {
-                FAV[`${Object.keys(headElem)[0]}`] = Object.values(headElem)[0]
-                FAVS.push(FAV)
-            } catch {
-                // res.json(headElem)
-                // return
-            }
-
-            iData++
-            if(iData >= rows[0][0].length) {
-                iData = 0
-                itteratorsData++
-
-                if(itteratorsData >= rows[itteratorsCors]?.length) {
-                    itteratorsCors++
-                    itteratorsData = 0
-
-                    if(itteratorsCors >= rows.length) {
-                        // res.json(FAVS)
-                        // return
-                        if(isSplited) {
-                            FAVS.forEach(fav => {
-                                let s = Object.values(fav)[0].split('\n')
-
-                                s.forEach(elem => {
-                                    let t = {}
-                                    if(elem) {
-                                        t[`${Object.keys(fav)[0]}`] = elem
-                                        fieldsAndValue.push(t)
-                                    }
-                                })
-                            })
-                        } else {
-                            FAVS.forEach(fav => {
-                                let t = {}
-                                t[`${Object.keys(fav)[0]}`] = Object.values(fav)[0].replaceAll('\n', '\r')
-                                // if(Object.keys(fav)[0] === "Контакты:Телефон" && Object.values(fav)[0].length > 20) {
-                                //     res.json(t)
-                                //     return
-                                // }
-                                fieldsAndValue.push(t)
-                            })
-                        }
-
-                        break
-                    }
-                }
-            }
-        }
-        // res.json(FAVS)
-        // return
 
         let result = []
 
-        // console.log(fieldsAndValue.length, rows[0][0].length)
-        // console.log(fieldsAndValue.length / rows[0][0].length)
-        // console.log(Math.round(fieldsAndValue.length / rows[0][0].length))
-        let itterators = Array(Math.round(fieldsAndValue.length / rows[0][0].length)).fill(0)
+        while(offset < cntTheCores) {
+            let theCoresObject = {}
 
-        for(let i = 0; i < itterators.length; i++) {
-            itterators[i] += i * rows[0][0].length
-        }
+            for(let c = 0; c < cores.length; c++) {
+                let core = cores[c]
 
-        let iterat = 0
-        let t = {}
+                let aCore = await Scheme.core.findOne({
+                    where: {
+                        idCore: core.idCore
+                    }
+                })
 
-        while(true) {
+                if(aCore) {
+                    let theCores = await aCore.getTheCores({
+                        limit,
+                        offset,
+                    })
 
-            let i = itterators[iterat]
-
-            let elem = fieldsAndValue[i]
-
-            t[`${Object.keys(elem)[0]}`] = Object.values(elem)[0]
-
-            iterat++
-            if(iterat >= itterators.length) {
-                iterat = 0
-                for(let h = 0; h < itterators.length; h++) {
-                    itterators[h]++
+                    if(!theCoresObject[`${core.name}`]) {
+                        theCoresObject[`${core.name}`] = theCores
+                    } else {
+                        theCoresObject[`${core.name}`] = theCoresObject[`${core.name}`].concat(theCores)
+                    }
                 }
-
-                result.push(t)
-                t = {}
             }
-            if(itterators[itterators.length - 1] >= fieldsAndValue.length) break
-        }
+            let theCoresArray = Object.values(theCoresObject)
+            let theCoresNames = Object.keys(theCoresObject)
 
-        if(isSplited) {
-            let key = Object.keys(result[0])[0]
-            let set = []
+            for(let tc = 0; tc < theCoresNames.length; tc++) {
+                let theCores = theCoresArray[tc]
+                let nameCore = theCoresNames[tc]
 
-            result.forEach(r => {
-                set.push(Object.values(r)[0])
-            })
+                if(tc == 0) {
+                    for(let tcIndex = 0; tcIndex < theCores.length; tcIndex++) {
+                        let theCore = theCores[tcIndex]
 
-            set = [...new Set(set)]
+                        let exportFields = cores.filter(c => c.idCore == theCore.coreHasTheCore.coreIdCore)[0].exportField
+
+                        let elem = {}
+                        if(exportFields) {
+                            for(let ef = 0; ef < exportFields.length; ef++) {
+                                let idExportField = exportFields[ef]
+
+                                let values = await theCore.getCoreTypeOfFields({
+                                    where: {
+                                        typeOfFieldIdTypeOfField: idExportField
+                                    },
+                                    include: [{
+                                        model: Scheme.typeOfField
+                                    }]
+                                })
+                                let value = values[0]
+
+                                elem[`${nameCore}:${value.typeOfField.name}`] = value.value
+                            }
+                            result.push(elem)
+                        }
+                    }
+                } else {
+                    let i = 0
+
+                    for(let tcIndex = 0; tcIndex < theCores.length; tcIndex++) {
+                        let theCore = theCores[tcIndex]
+
+                        let exportFields = cores.filter(c => c.idCore == theCore.coreHasTheCore.coreIdCore)[0].exportField
+
+                        if(exportFields) {
+                            for(let ef = 0; ef < exportFields.length; ef++) {
+                                let idExportField = exportFields[ef]
+
+                                let values = await theCore.getCoreTypeOfFields({
+                                    where: {
+                                        typeOfFieldIdTypeOfField: idExportField
+                                    },
+                                    include: [{
+                                        model: Scheme.typeOfField
+                                    }]
+                                })
+                                let value = values[0]
+
+                                result[i][`${nameCore}:${value.typeOfField.name}`] = value.value
+                            }
+                            i++
+                        }
+                    }
+                }
+            }
+
+            page++
+            offset = limit * page - limit
+
+            let xls = json2xls(result)
+            let uid = uuidv4()
+            
+            fs.writeFileSync(`${uid}.xlsx`, xls, 'binary')
+            await YC.uploadFile(fs.readFileSync(path.resolve(`../server/${uid}.xlsx`)), `${uid}.xlsx`, 'fed-bd')
+            fs.unlinkSync(path.resolve(`../server/${uid}.xlsx`))
+
             result = []
-
-            set.forEach(s => {
-                let t = {}
-                t[`${key}`] = s
-                result.push(t)
-            })
         }
+        
+        let links = [] 
+        setTimeout(async () => {
+            const list = await YC.listObjectInBucket('fed-bd')
+            links = await YC.getDownloadLinks(list, 'fed-bd')
 
-        res.xls('data.xlsx', result)
-        // res.json(result)
+            res.json(links)
+        }, 500)
+
+        setTimeout(async () => {
+            await YC.deleteObjects(links, 'fed-bd')
+        }, 2500)
     })
 
     app.get('/testServer', async (req, res) => {
@@ -1150,5 +1050,11 @@ module.exports = function(app, upload, jwt) {
         }, 2000)
 
         // res.json(data)
+    })
+
+    app.post('/testResp', async (req, res) => {
+        await YC.uploadFile(fs.readFileSync(path.resolve("../server/data.xlsx")), "data.xlsx", 'fed-bd')
+
+        res.json({ok: true})
     })
 }

@@ -175,7 +175,7 @@ export default {
                 return
             }
 
-            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel`, {
+            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel2`, {
                 method: "POST",
                 headers: {
                     // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
@@ -187,13 +187,15 @@ export default {
                 })
             })
 
-            const excel = await data.blob()
-            const url = URL.createObjectURL(excel)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = 'report.xlsx'
-            a.style.display = 'none'
-            a.click()
+            const links = await data.json()
+            console.log(links)
+            links.forEach(async link => {
+                let a = document.createElement('a')
+                a.href = link.url
+                a.download = link.name
+                a.target = '_blank'
+                a.click()
+            })
         },
         showFilters() {
             this.checkTokens()
