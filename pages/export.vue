@@ -186,7 +186,7 @@ export default {
                 let links = []
 
                 for(let elem of list) {
-                    let linkData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getDownloadLink`, {
+                    let linkData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getDownloadLinkYC`, {
                         method: "POST",
                         headers: {
                             // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
