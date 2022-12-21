@@ -906,6 +906,7 @@ module.exports = function(app, upload, jwt) {
         }
 
         let result = []
+        let keys = []
 
         while(offset < cntTheCores) {
             let theCoresObject = {}
@@ -1000,21 +1001,19 @@ module.exports = function(app, upload, jwt) {
 
             let xls = json2xls(result)
             let uid = uuidv4()
+
+            keys.push({Key: `${uid}.xlsx`, Size: 123})
             
             fs.writeFileSync(`${uid}.xlsx`, xls, 'binary')
-            await YC.uploadFile(fs.readFileSync(path.resolve(`../server/${uid}.xlsx`)), `${uid}.xlsx`, 'fed-bd')
-            fs.unlinkSync(path.resolve(`../server/${uid}.xlsx`))
+            await YC.uploadFile(fs.readFileSync(path.resolve(`../static/downloads/${uid}.xlsx`)), `${uid}.xlsx`, 'fed-bd')
+            fs.unlinkSync(path.resolve(`../static/downloads/${uid}.xlsx`))
 
             result = []
         }
-        
-        let links = [] 
-        setTimeout(async () => {
-            const list = await YC.listObjectInBucket('fed-bd')
-            links = await YC.getDownloadLinks(list, 'fed-bd')
 
-            res.json(links)
-        }, 500)
+        let links = await YC.getDownloadLinks(keys, 'fed-bd')
+
+        res.json(links)
 
         setTimeout(async () => {
             await YC.deleteObjects(links, 'fed-bd')
