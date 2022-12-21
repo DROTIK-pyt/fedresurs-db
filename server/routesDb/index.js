@@ -886,7 +886,7 @@ module.exports = function(app, upload, jwt) {
 
     app.post('/exportToExcel2', async (req, res) => {
         const { cores, filters } = req.body
-        const limit = 1000
+        const limit = 500
         let page = 1
         let offset = limit * page - limit
 
@@ -1002,28 +1002,39 @@ module.exports = function(app, upload, jwt) {
             let xls = json2xls(result)
             let uid = uuidv4()
 
-            keys.push({Key: `${uid}.xlsx`, Size: 123})
+            // keys.push({Key: `${uid}.xlsx`, Size: 123})
             
-            fs.writeFileSync(path.resolve(`./static/downloads/${uid}.xlsx`), xls, "binary")
+            fs.writeFileSync(path.resolve(`../static/downloads/${uid}.xlsx`), xls, "binary")
 
-            const xlsBuffer = fs.readFileSync(path.resolve(`./static/downloads/${uid}.xlsx`))
+            const xlsBuffer = fs.readFileSync(path.resolve(`../static/downloads/${uid}.xlsx`))
             await YC.uploadFile(xlsBuffer, `${uid}.xlsx`, 'fed-bd')
 
             result = []
         }
-        setTimeout(async () => {
-            let links = await YC.getDownloadLinks(keys, 'fed-bd')
-
-            res.json(links)
-        }, 100)
+        res.json(true)
     })
 
     app.delete('/deleteObjects', async (req, res) => {
         const { links } = req.body
 
-        await YC.deleteObjects(links, 'fed-bd')
+        if(links.length)
+            await YC.deleteObjects(links, 'fed-bd')
 
         res.json({ok: true})
+    })
+
+    app.get("/listObjectsYC", async (req, res) => {
+        const list = await YC.listObjectInBucket('fed-bd')
+
+        res.json(list)
+    })
+
+    app.post("/getDownloadLinkYC", async (req, res) => {
+        const { key } = req.body
+        
+        const link = await YC.getDownloadLink(key, 'fed-bd')
+
+        res.json(link)
     })
 
     app.get('/testServer', async (req, res) => {

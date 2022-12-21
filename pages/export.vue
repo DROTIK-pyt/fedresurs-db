@@ -175,7 +175,43 @@ export default {
                 return
             }
 
-            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel2`, {
+            let allLinks = []
+
+            const idInterval = setInterval(async () => {
+                console.log('check objects..')
+
+                const listData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/listObjectsYC`)
+                const list = await listData.json()
+
+                let links = []
+
+                for(let elem of list) {
+                    let linkData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel2`, {
+                        method: "POST",
+                        headers: {
+                            // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                            'Content-Type': 'application/json;charset=utf-8'
+                        },
+                        body: JSON.stringify({
+                            key: elem.Key
+                        })
+                    })
+                    let link = await linkData.json()
+                    links.push({url: link, name: elem.Key})
+                }
+
+                for(let link of links) {
+                    let a = document.createElement('a')
+                    a.href = link.url
+                    a.download = link.name
+                    a.target = '_blank'
+                    a.click()
+                }
+
+                allLinks = allLinks.concat(links)
+            }, 1000)
+
+            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel2`, {
                 method: "POST",
                 headers: {
                     // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
@@ -186,26 +222,62 @@ export default {
                     filters: this.filters
                 })
             })
+            .then(resultData => resultData.json())
+            .then(async result => {
+                console.log(`Full loaded files`)
+                clearInterval(idInterval)
 
-            const links = await data.json()
+                setTimeout(async () => {
+                    if(allLinks.length == 0) {
+                        const listData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/listObjectsYC`)
+                        const list = await listData.json()
 
-            for(let link of links) {
-                let a = document.createElement('a')
-                a.href = link.url
-                a.download = link.name
-                a.target = '_blank'
-                a.click()
-            }
+                        let links = []
 
-            await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/deleteObjects`, {
-                method: "DELETE",
-                headers: {
-                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
-                    'Content-Type': 'application/json;charset=utf-8'
-                },
-                body: JSON.stringify({
-                    links
-                })
+                        for(let elem of list) {
+                            let linkData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getDownloadLinkYC`, {
+                                method: "POST",
+                                headers: {
+                                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                                    'Content-Type': 'application/json;charset=utf-8'
+                                },
+                                body: JSON.stringify({
+                                    key: elem.Key
+                                })
+                            })
+                            let link = await linkData.json()
+                            links.push({url: link, name: elem.Key})
+                        }
+
+                        allLinks = allLinks.concat(links)
+
+                        const downloadedPromise = new Promise((resolve, reject) => {
+                            for(let link of links) {
+                                let a = document.createElement('a')
+                                a.href = link.url
+                                a.download = link.name
+                                a.target = '_blank'
+                                a.click()
+                            }
+                            resolve()
+                        })
+
+                        downloadedPromise.then(() => {
+                            setTimeout(async () => {
+                                await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/deleteObjects`, {
+                                    method: "DELETE",
+                                    headers: {
+                                        // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                                        'Content-Type': 'application/json;charset=utf-8'
+                                    },
+                                    body: JSON.stringify({
+                                        links: allLinks
+                                    })
+                                })
+                            }, 1000)
+                        })
+                    }
+                }, 1000)          
             })
         },
         showFilters() {

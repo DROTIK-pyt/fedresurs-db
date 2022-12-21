@@ -1,4 +1,5 @@
 const S3 = require('aws-sdk/clients/s3')
+const fs = require('fs')
 
 const settings = {
     credentials: {
@@ -62,11 +63,22 @@ async function getDownloadLinks(list = [], bucket) {
     return urls
 }
 
+async function getDownloadLink(key = "", bucket) {
+    let url = await s3.getSignedUrlPromise('getObject', {
+        Bucket: bucket,
+        Expires: 3600,
+        Key: key
+    })
+
+    return url
+}
+
 async function deleteObjects(list = [], bucket) {
     let Objects = []
     
     list.forEach(item => {
         Objects.push({Key: item.name})
+        fs.unlinkSync(`../static/downloads/${item.name}`)
     })
 
     await s3.deleteObjects({
@@ -82,5 +94,6 @@ module.exports = {
     uploadFile,
     listObjectInBucket,
     getDownloadLinks,
+    getDownloadLink,
     deleteObjects
 }
