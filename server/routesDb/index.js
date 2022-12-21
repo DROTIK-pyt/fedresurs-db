@@ -1004,9 +1004,11 @@ module.exports = function(app, upload, jwt) {
 
             keys.push({Key: `${uid}.xlsx`, Size: 123})
             
-            fs.writeFileSync(`${uid}.xlsx`, xls, 'binary')
-            await YC.uploadFile(fs.readFileSync(path.resolve(`../static/downloads/${uid}.xlsx`)), `${uid}.xlsx`, 'fed-bd')
-            // fs.unlinkSync(path.resolve(`../static/downloads/${uid}.xlsx`))
+            fs.writeFile(`${uid}.xlsx`, xls, (err) => {
+                if(!err) {
+                    YC.uploadFile(fs.readFileSync(path.resolve(`../static/downloads/${uid}.xlsx`)), `${uid}.xlsx`, 'fed-bd')
+                }
+            })
 
             result = []
         }
