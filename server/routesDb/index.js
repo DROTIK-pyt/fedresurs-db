@@ -1006,7 +1006,7 @@ module.exports = function(app, upload, jwt) {
             
             fs.writeFileSync(`${uid}.xlsx`, xls, 'binary')
             await YC.uploadFile(fs.readFileSync(path.resolve(`../static/downloads/${uid}.xlsx`)), `${uid}.xlsx`, 'fed-bd')
-            fs.unlinkSync(path.resolve(`../static/downloads/${uid}.xlsx`))
+            // fs.unlinkSync(path.resolve(`../static/downloads/${uid}.xlsx`))
 
             result = []
         }
