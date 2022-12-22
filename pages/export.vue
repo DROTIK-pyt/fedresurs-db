@@ -170,7 +170,7 @@ export default {
         },
         abortExportToExcel() {
             this.abortControllerInstanceExport.abort()
-            clearInterval()
+            clearInterval(this.idInterval)
         },
         async exportToExcel() {
             this.checkTokens()
