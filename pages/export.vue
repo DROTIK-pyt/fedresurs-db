@@ -209,7 +209,7 @@ export default {
                 }
 
                 allLinks = allLinks.concat(links)
-            }, 1000)
+            }, 10)
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel2`, {
                 method: "POST",
