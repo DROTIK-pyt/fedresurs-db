@@ -11,6 +11,13 @@
             </v-btn>
             <v-btn
                 depressed
+                color="primary"
+                @click="abortExportToExcel"
+            >
+                Прервать экспорт
+            </v-btn>
+            <v-btn
+                depressed
                 color="success"
                 @click="showFilters"
                 :loading="loadingFilters"
@@ -80,7 +87,10 @@ export default {
         coreIds: [],
         currentIdCore: -1,
 
+        idInterval: null,
+
         abortControllerInstance: null,
+        abortControllerInstanceExport: null,
     }),
     components: {filter2fields, errorMsgVue},
     methods: {
@@ -158,6 +168,10 @@ export default {
             this.abortControllerInstance.abort()
             this.abortControllerInstance = new AbortController()
         },
+        abortExportToExcel() {
+            this.abortControllerInstanceExport.abort()
+            clearInterval()
+        },
         async exportToExcel() {
             this.checkTokens()
 
@@ -177,7 +191,7 @@ export default {
 
             let allLinks = []
 
-            const idInterval = setInterval(async () => {
+            this.idInterval = setInterval(async () => {
                 console.log('check objects..')
 
                 const listData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/listObjectsYC`)
@@ -187,6 +201,7 @@ export default {
 
                 for(let elem of list) {
                     let linkData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getDownloadLinkYC`, {
+                        signal: this.abortControllerInstanceExport,
                         method: "POST",
                         headers: {
                             // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
@@ -228,6 +243,7 @@ export default {
             }, 30*1000)
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel2`, {
+                signal: this.abortControllerInstanceExport,
                 method: "POST",
                 headers: {
                     // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
@@ -241,7 +257,7 @@ export default {
             .then(resultData => resultData.json())
             .then(async result => {
                 console.log(`Full loaded files`)
-                clearInterval(idInterval)
+                clearInterval(this.idInterval)
 
                 setTimeout(async () => {
                     if(allLinks.length == 0) {
@@ -252,6 +268,7 @@ export default {
 
                         for(let elem of list) {
                             let linkData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/getDownloadLinkYC`, {
+                                signal: this.abortControllerInstanceExport,
                                 method: "POST",
                                 headers: {
                                     // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
@@ -391,6 +408,7 @@ export default {
     },
     async beforeMount() {
         this.abortControllerInstance = new AbortController()
+        this.abortControllerInstanceExport = new AbortController()
         
         await this.getAllData()
 
