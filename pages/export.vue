@@ -200,16 +200,32 @@ export default {
                     links.push({url: link, name: elem.Key})
                 }
 
-                for(let link of links) {
-                    let a = document.createElement('a')
-                    a.href = link.url
-                    a.download = link.name
-                    a.target = '_blank'
-                    a.click()
-                }
+                const downloadedPromise = new Promise((resolve, reject) => {
+                    for(let link of links) {
+                        let a = document.createElement('a')
+                        a.href = link.url
+                        a.download = link.name
+                        a.target = '_blank'
+                        a.click()
+                    }
+                    resolve()
+                })
 
-                allLinks = allLinks.concat(links)
-            }, 10*1000)
+                downloadedPromise.then(() => {
+                    setTimeout(async () => {
+                        await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/deleteObjects`, {
+                            method: "DELETE",
+                            headers: {
+                                // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                                'Content-Type': 'application/json;charset=utf-8'
+                            },
+                            body: JSON.stringify({
+                                links
+                            })
+                        })
+                    }, 500)
+                })
+            }, 5*1000)
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel2`, {
                 method: "POST",
