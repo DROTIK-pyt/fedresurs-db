@@ -223,9 +223,9 @@ export default {
                                 links
                             })
                         })
-                    }, 500)
+                    }, 100)
                 })
-            }, 5*1000)
+            }, 30*1000)
 
             fetch(`${serverSetting.baseUrl}:${serverSetting.port}/exportToExcel2`, {
                 method: "POST",
