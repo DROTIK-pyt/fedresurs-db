@@ -225,11 +225,6 @@ export default {
                             this.$router.push("/")
                             return false
                         }
-                    } else {
-                        this.loading2save = false
-                        this.loading2addField = false
-                        this.$router.push("/")
-                        return false
                     }
                 }
             } else {

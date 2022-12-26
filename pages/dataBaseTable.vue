@@ -180,8 +180,26 @@ export default {
             })
         },
         async getAllDataFields(idCore, page = 1, allPages = 0) {
-            if(allPages == 0) {
-                const fc = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
+            try {
+                if(allPages == 0) {
+                    const fc = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsCount`, {
+                        signal: this.abortControllerInstance.signal,
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json;charset=utf-8',
+                        },
+                        body: JSON.stringify({
+                            idCore,
+                        })
+                    })
+                    const counted = await fc.json()
+
+                    allPages = Math.ceil(counted/400)
+                }
+
+                if(page > allPages && allPages != 0) return
+
+                fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
                     signal: this.abortControllerInstance.signal,
                     method: "POST",
                     headers: {
@@ -189,54 +207,40 @@ export default {
                     },
                     body: JSON.stringify({
                         idCore,
+                        page,
+                        allPages
                     })
                 })
-                const counted = await fc.json()
+                .then(data => data.json())
+                .then(semiFields => {
 
-                allPages = Math.ceil(counted/400)
+                    // Получить данные сущности по столбцам
+                    const entities = semiFields.fields
+
+                    // Вставить данные сущности
+                    let elem = {}
+
+                    entities.theCores.forEach(entity => {
+                        entity.typeOfFields.forEach(field => {
+                            if(field.coreTypeOfField.value) {
+                                elem[`${field.tag}`] = field.coreTypeOfField.value
+                            } else {
+                                elem[`${field.tag}`] = "Нет данных"
+                            }
+                        })
+                        elem['idEntity'] = entity.idTheCore
+                        this.entities.push(elem)
+                        elem = {}
+                    })
+                })
+
+                setTimeout(() => {
+                    page++
+                    this.getAllDataFields(idCore, page, allPages)
+                }, 100)
+            } catch {
+                return
             }
-
-            if(page > allPages && allPages != 0) return
-
-            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fields`, {
-                signal: this.abortControllerInstance.signal,
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8',
-                },
-                body: JSON.stringify({
-                    idCore,
-                    page,
-                    allPages
-                })
-            })
-            .then(data => data.json())
-            .then(semiFields => {
-
-                // Получить данные сущности по столбцам
-                const entities = semiFields.fields
-
-                // Вставить данные сущности
-                let elem = {}
-
-                entities.theCores.forEach(entity => {
-                    entity.typeOfFields.forEach(field => {
-                        if(field.coreTypeOfField.value) {
-                            elem[`${field.tag}`] = field.coreTypeOfField.value
-                        } else {
-                            elem[`${field.tag}`] = "Нет данных"
-                        }
-                    })
-                    elem['idEntity'] = entity.idTheCore
-                    this.entities.push(elem)
-                    elem = {}
-                })
-            })
-
-            setTimeout(() => {
-                page++
-                this.getAllDataFields(idCore, page, allPages)
-            }, 100)
         },
         async showEntity({idEntity}) {
             this.checkTokens()
@@ -266,8 +270,6 @@ export default {
     components: {theEntityVue},
     async beforeMount() {
         this.abortControllerInstance = new AbortController()
-
-        this.checkTokens()
         
         this.getAllData()
     },

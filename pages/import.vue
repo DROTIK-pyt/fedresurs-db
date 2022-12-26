@@ -322,7 +322,7 @@ export default {
         // Подготовить вывод действий на случай совпадения полей сущности
         whatDoWeDo: [
             {
-                text: "Обновить",
+                text: "Обновить / Загрузить",
                 action: "update"
             },
             {
@@ -467,7 +467,7 @@ export default {
                         idCore: core.idCore,
                         name: core.name,
                         fields: [],
-                        action: "skip"
+                        action: "update"
                     })
                     result.fieldsValues.forEach(field => {
                         let types = []
@@ -509,13 +509,13 @@ export default {
                 this.loading2base = false
                 
                 this.isShowError = true
-                this.errorMsg = "Файл не был загружен. Очистите кеш, загрузите файл и повторите попытку."
+                this.errorMsg = "Данные не были загружены. Очистите кеш, загрузите файл и повторите попытку."
                 clearInterval(checkPerCentIntervalId)
 
                 return
             }
 
-            const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/uploadToBase`, {
+            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/uploadToBase`, {
                 method: "POST",
                 headers: {
                     // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
@@ -528,12 +528,16 @@ export default {
                     cond: this.cond
                 })
             })
-            const result = await data.json()
-
-            if(result.ok)
+            .then(data => data.json())
+            .then(result => {
+                if(!result.ok) {
+                    this.isShowError = true
+                    this.errorMsg = "Данные не были загружены. Очистите кеш, загрузите файл и повторите попытку."
+                }
                 this.loading2base = false
 
-            clearInterval(checkPerCentIntervalId)
+                clearInterval(checkPerCentIntervalId)
+            })
         },
     },
     components: {draggable, errorMsgVue},

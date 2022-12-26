@@ -98,7 +98,7 @@ export default {
         async checkTokens() {
             let accessToken = localStorage.getItem("accessToken")
             let sessionId = localStorage.getItem("sessionId")
-
+            
             if(accessToken && sessionId) {
                 const data = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/checkTokens`, {
                     method: "POST",
@@ -333,38 +333,42 @@ export default {
 
             // console.log({page, idIndex, allPages, currentIdCore: this.currentIdCore})
 
-            let countAllFieldsData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
-                signal: this.abortControllerInstance.signal,
-                method: "POST",
-                headers: {
-                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
-                    'Content-Type': 'application/json;charset=utf-8'
-                },
-                body: JSON.stringify({
-                    idCore
+            try {
+                let countAllFieldsData = await fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExportGetCount`, {
+                    signal: this.abortControllerInstance.signal,
+                    method: "POST",
+                    headers: {
+                        // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                        'Content-Type': 'application/json;charset=utf-8'
+                    },
+                    body: JSON.stringify({
+                        idCore
+                    })
                 })
-            })
-            let countAllFields = await countAllFieldsData.json()
+                let countAllFields = await countAllFieldsData.json()
 
-            fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`, {
-                signal: this.abortControllerInstance.signal,
-                method: "POST",
-                headers: {
-                    // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
-                    'Content-Type': 'application/json;charset=utf-8'
-                },
-                body: JSON.stringify({
-                    page,
-                    idCore,
-                    max: countAllFields
+                fetch(`${serverSetting.baseUrl}:${serverSetting.port}/fieldsExport`, {
+                    signal: this.abortControllerInstance.signal,
+                    method: "POST",
+                    headers: {
+                        // 'Content-Type': 'multipart/form-data;boundary=MyBoundary'
+                        'Content-Type': 'application/json;charset=utf-8'
+                    },
+                    body: JSON.stringify({
+                        page,
+                        idCore,
+                        max: countAllFields
+                    })
                 })
-            })
-            .then(data => data.json())
-            .then(values => {
-                if(values.items) {
-                    this.fieldsInFilter[idCore] = this.fieldsInFilter[idCore].concat(values)
-                }
-            })
+                .then(data => data.json())
+                .then(values => {
+                    if(values.items) {
+                        this.fieldsInFilter[idCore] = this.fieldsInFilter[idCore].concat(values)
+                    }
+                })
+            } catch {
+                return
+            }
 
             page++
             this.getFieldsExportByPage(page, idIndex, allPages)

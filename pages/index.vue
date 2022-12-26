@@ -60,7 +60,7 @@ export default {
                 const result = await data.json()
 
                 if(result.ok) {
-                    this.$router.push("/import")
+                    this.$router.go(-1)
                 }
             }
         },

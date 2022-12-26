@@ -575,6 +575,11 @@ module.exports = function(app, upload, jwt) {
         // res.json(file2field)
         // return
 
+        if(!cache.find(c => c.id === uniqueSuffix)) {
+            res.json({ok: false})
+            return
+        }
+
         const readFile = cache.find(c => c.id === uniqueSuffix).readFile[0]
         currentSuffix = uniqueSuffix
         lengthDocument = readFile.length - 1
