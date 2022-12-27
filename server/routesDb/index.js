@@ -964,9 +964,10 @@ module.exports = function(app, upload, jwt) {
                                         model: Scheme.typeOfField
                                     }]
                                 })
-                                let value = values[0]
-
-                                elem[`${nameCore}:${value.typeOfField.name}`] = value.value
+                                if(values.length) {
+                                    let value = values[0]
+                                    elem[`${nameCore}:${value.typeOfField.name}`] = value.value
+                                }
                             }
                             result.push(elem)
                         }
