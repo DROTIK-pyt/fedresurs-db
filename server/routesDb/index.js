@@ -1010,7 +1010,7 @@ module.exports = function(app, upload, jwt) {
 
             // keys.push({Key: `${uid}.xlsx`, Size: 123})
 
-            const path2file = path.resolve(`../static/downloads/${uid}.xlsx`)
+            const path2file = path.resolve(`./static/downloads/${uid}.xlsx`)
             
             fs.writeFileSync(path2file, xls, "binary")
 
