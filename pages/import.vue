@@ -140,7 +140,7 @@
                         <v-col
                         cols="12"
                         sm="12"
-                        v-for="core in fieldsSystem"
+                        v-for="(core, index) in fieldsSystem"
                         :key="core?.idCore"
                         class="bordered"
                         >
@@ -184,7 +184,7 @@
                                 >
                                     <h4 class="mb-1 bordered px-1">Уникальное поле</h4>
                                     <v-select
-                                    :items="uniqueFields"
+                                    :items="uniqueFields[index]"
                                     label="поле.."
                                     outlined
                                     item-value="idTypeOfField"
@@ -334,7 +334,7 @@ export default {
                 action: "supplement"
             },
         ],
-        uniqueFields: [],
+        uniqueFields: {},
 
         tabs: null,
 
@@ -469,6 +469,8 @@ export default {
                         fields: [],
                         action: "update"
                     })
+                    this.uniqueFields[index] = []
+
                     result.fieldsValues.forEach(field => {
                         let types = []
                         field.cores.forEach(c => types.push(c.idCore))
@@ -482,19 +484,24 @@ export default {
                                 type: field.classOfField.name,
                                 core2type: types,
                             })
+
+                            this.uniqueFields[index].push({
+                                name: field.name,
+                                idTypeOfField: field.idTypeOfField
+                            })
                         }
                     })
                 })
             }
 
-            this.fieldsSystem.forEach(uf => {
-                uf.fields.forEach(field => {
-                    this.uniqueFields.push({
-                        name: field.name,
-                        idTypeOfField: field.idTypeOfField
-                    })
-                })
-            })
+            // this.fieldsSystem.forEach(uf => {
+            //     uf.fields.forEach(field => {
+            //         this.uniqueFields.push({
+            //             name: field.name,
+            //             idTypeOfField: field.idTypeOfField
+            //         })
+            //     })
+            // })
         },
         async uploadToBase() {
             this.checkTokens()

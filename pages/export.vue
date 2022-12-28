@@ -200,12 +200,11 @@ export default {
                     links.push({url: link, name: elem.Key})
                 }
 
-                const downloadedPromise = new Promise((resolve, reject) => {
+                const downloadedPromise = new Promise(async (resolve, reject) => {
                     for(let link of links) {
                         let a = document.createElement('a')
                         a.href = link.url
                         a.download = link.name
-                        a.target = '_blank'
                         a.click()
                     }
                     resolve()
